@@ -201,11 +201,13 @@ function main(scene, camera, height, width, outfile)
 
     for i in 1:height #for each pixel
         for j in 1:width
-            #for s in 1:Cameras.SAMPLES_PER_PIXEL #Shoot n rays to each pixel
-                view_ray = Cameras.pixel_to_ray(camera, i, j) #generate viewing ray
-                pixel_color = traceray(scene, view_ray, 1, Inf32, 8) #trace the viewing ray to determine pixel color
-            #end
-            #pixel_color *= (1/Cameras.SAMPLES_PER_PIXEL) #Average the pixel color across each sample
+            pixel_color = BLACK
+            for s in 1:Cameras.SAMPLES_PER_PIXEL #Shoot n rays to each pixel
+                subpix = Cameras.convertSubpixel(s)
+                view_ray = Cameras.pixel_to_ray(camera, subpix, i, j) #generate viewing ray
+                pixel_color += traceray(scene, view_ray, 1, Inf32, 8) #trace the viewing ray to determine pixel color
+            end
+            pixel_color *= (1/Cameras.SAMPLES_PER_PIXEL) #Average the pixel color across each sample
             canvas[i,j] = pixel_color #set the color of the pixel based on the traced ray
         end
     end
