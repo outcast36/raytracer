@@ -13,10 +13,12 @@ import LinearAlgebra.cross
 using ..GfxBase
 
 export CanonicalCamera
-export pixel_to_ray
+export pixel_to_ray, convertSubpixel
 export SAMPLES_PER_PIXEL
 
-SAMPLES_PER_PIXEL = 25
+#Divide pixel into n*n grid of subpixels
+SAMPLES_PER_PIXEL = 100
+N_SUBPIXELS = isqrt(SAMPLES_PER_PIXEL)
 
 """ The most basic perspective camera. The eye is at (0, 0, 0),
 the up vector is (0, 1, 0), and the view direction is (0, 0, -1).
@@ -27,22 +29,31 @@ mutable struct CanonicalCamera
     canv_width::Int
 end
 
+""" Convert a 1d subpixel index into a 2d subpixel index """
+function convertSubpixel(subpix)
+    sub_i = subpix%N_SUBPIXELS == 0 ? div(subpix,N_SUBPIXELS) : div(subpix,N_SUBPIXELS)+1
+    sub_j = subpix%N_SUBPIXELS == 0 ? N_SUBPIXELS : subpix%N_SUBPIXELS 
+    return Vec2(sub_i, sub_j)
+end
 
 """ Given a camera and pixel coordinates 1-indexed, i=row,j=column],
 return the ray along which to search for objects that project to
 that pixel. """
-function pixel_to_ray(camera::CanonicalCamera, i, j)
+function pixel_to_ray(camera::CanonicalCamera, subPixel::Vec2, i, j)
+    #Flip subpixel coordinates
+    sub_j = 6-subPixel[2]
+    sub_i = 6-subPixel[1]
     # viewport height = 1
     vp_height = camera.canv_height / camera.canv_width
 
     # convert from i,j 2D array indices to (u, v) coordinates
     # with (0,0) in the center of the image
     # half pixel shift, scale down to size 1, shift origin to center
-    u =  ((j - 0.5)    / camera.canv_width       - 0.5)
+    u =  ((j - sub_j/N_SUBPIXELS)    / (camera.canv_width)       - 0.5)
 
     # same as u, except i increases downward so flip with a negative sign
     # and multiply by vp_height to account for aspect ratio
-    v = -((i - 0.5)    / camera.canv_height      - 0.5) * vp_height
+    v = -((i - sub_i/N_SUBPIXELS)    / (camera.canv_height)      - 0.5) * vp_height
 
     # focal length is 1, pointing down the -z axis
     w = -1.0
