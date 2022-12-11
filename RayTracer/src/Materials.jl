@@ -21,6 +21,7 @@ mutable struct Metallic <: Material
     albedo::RGB{Float32}
     specularColor::RGB{Float32}
     reflectance::Float64
+    fuzz::Float64
     specularExp
 end
 
