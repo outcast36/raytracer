@@ -21,7 +21,7 @@ end
 
 """ Return a random value in the range [min, max) """
 function random_float(low, high)
-    return low + (high-low)*rand();
+    return low + (high-low)*rand()
 end
 
 """ Rejection method for picking a random point in the unit sphere """
