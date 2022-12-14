@@ -36,8 +36,6 @@ import .TestScenes
 BLACK = RGB{Float32}(0.0, 0.0, 0.0)
 WHITE = RGB{Float32}(1.0, 1.0, 1.0)
 
-N_SAMPLES = 10
-
 # Ray-Scene intersection:
 """ Find the closest intersection point among all objects in the scene
 along a ray, constraining the search to values of t between tmin and tmax. """
@@ -123,9 +121,9 @@ function getColor(scene::Scene, material::Metallic, ray::Ray, normal, point, tma
     if (dot(reflectDirection, normal) < 0)
         return BLACK
     end
-    reflectionRay = Ray(point, reflectDirection)
+    reflectionRay = Ray(point, reflectDirection +material.fuzz*randomUnitSphere())
     color = traceray(scene, reflectionRay, 1e-8, tmax, rec_depth - 1)
-    color = RGB{Float32}(red(diffuse_color)*red(color), green(diffuse_color)*green(color), blue(diffuse_color)*blue(color))
+    color = RGB{Float32}(red(diffuse_color)*red(color), green(diffuse_color)*green(color), blue(diffuse_color)*blue(color))  
     return color 
 end
 
@@ -161,7 +159,11 @@ function glossyReflect(r::Vec3, n::Vec3)
     u_hat = normalize(cross(t,w_hat))
     v_hat = cross(w_hat, u_hat)
     sampled = randomHemiSphere(n)
-    return sampled[1]*u_hat + sampled[2]*v_hat + sampled[3]*w_hat
+    wi = sampled[1]*u_hat + sampled[2]*v_hat + sampled[3]*w_hat
+    if dot(n, wi) < 0
+        wi = -wi
+    end
+    return wi 
 end
 
 """ Determine the color of interesction point described by hitrec 
