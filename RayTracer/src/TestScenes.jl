@@ -61,8 +61,8 @@ function scene_1()
 
     objs = []
     mat_center = Lambertian(RGB{Float32}(0.7, 0.3, 0.3), RED, 10)
-    mat_left = Metallic(left_metal, left_metal, 0.5, 100)
-    mat_right = Metallic(right_metal, right_metal, 0.65, 100)
+    mat_left = Metallic(left_metal, left_metal, 0.5, 0.3, 100)
+    mat_right = Metallic(right_metal, right_metal, 0.65, 1.0, 100)
     mat_ground = Lambertian(ground_color, white, 10)
 
     push!(objs, Sphere(Vec3(0, 0.0, -3.0), 0.5, mat_center))
@@ -171,6 +171,18 @@ function scene_6()
     Scene(bg, objs, lights)
 end
 
+function scene_7()
+    bg = black
+    mat_ground = Metallic(white, white, 0.65, 0.4, 10)
+    mat_red = Lambertian(RED, RED, 10)
+    objs = []
+    push!(objs, Sphere(Vec3(0.0, 0.0, -10.5), 1.0, mat_red))
+    push!(objs, Sphere(Vec3(0,-101,-1), 100.0, mat_ground))
+    lights = [DirectionalLight(0.6, Vec3(0, 1, 1)),
+    PointLight(0.4, Vec3(1,0,0))]
+    Scene(bg, objs, lights)
+end
+
 """ Take the OBJMesh mesh and return an array of Triangles from the mesh
 with the given material, after scaling the mesh positions by scale and moving
 them by translation """
@@ -184,6 +196,6 @@ function mesh_helper(mesh, material, scale=1.0, translation=Vec3(0,0,0))
 end
 
 
-scenes = [scene_1, scene_2, scene_3, scene_4, scene_5, scene_6]
+scenes = [scene_1, scene_2, scene_3, scene_4, scene_5, scene_6, scene_7]
 
 end # module TestScenes
