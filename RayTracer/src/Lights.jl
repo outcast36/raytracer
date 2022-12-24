@@ -76,8 +76,4 @@ function shade_light(material, ray::Ray, normal::Vec3, intersection::Vec3, light
     return diffuse_light + specular_light #RGB color + RGB color
 end
 
-function colorMultiply(a, b)
-    return RGB{Float32}(a.r*b.r, a.g*b.g, a.b*b.b)
-end
-
 end # module Lights
