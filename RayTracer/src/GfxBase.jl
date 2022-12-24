@@ -1,6 +1,6 @@
 module GfxBase
 
-export Vec3, Vec2, Ray, randomUnitSphere, randomHemiSphere
+export Vec3, Vec2, Ray, randomUnitSphere, randomHemiSphere, randomCosineHemi, colorMultiply
 
 using Images
 using StaticArrays
@@ -42,6 +42,24 @@ function randomHemiSphere(normal::Vec3)
     else
         return -inSphere;
     end
+end
+
+""" Sample a point on the hemisphere with cosine density """
+function randomCosineHemi(exp)
+    sample = Vec2(rand(), rand())
+    cos_phi = cos(2*pi*sample[1])
+    sin_phi = sin(2*pi*sample[1])
+    cos_theta = (1-sample[2])^(1/(1+exp))
+    sin_theta = sqrt(1 - (cos_theta*cos_theta))
+    sx = sin_theta*cos_phi
+    sy = sin_theta*sin_phi
+    sz = cos_theta
+    return Vec3(sx, sy, sz)
+end
+
+""" Multiply two RGB colors channelwise """
+function colorMultiply(a, b)
+    return RGB{Float32}(a.r*b.r, a.g*b.g, a.b*b.b)
 end
 
 end # module GfxBase
