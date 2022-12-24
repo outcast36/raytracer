@@ -116,15 +116,37 @@ function getColor(scene::Scene, material::Lambertian, ray::Ray, normal, point, t
 end
 
 function getColor(scene::Scene, material::Metallic, ray::Ray, normal, point, tmax, rec_depth)
+    # -- Mirror Reflection -- #
     diffuse_color = shade_diffuse(material, ray, normal, point, scene)
     reflectDirection = reflectRay(-ray.direction, normal)
     if (dot(reflectDirection, normal) < 0)
         return BLACK
     end
-    reflectionRay = Ray(point, reflectDirection +material.fuzz*randomUnitSphere())
+    reflectionRay = Ray(point, reflectDirection)
     color = traceray(scene, reflectionRay, 1e-8, tmax, rec_depth - 1)
-    color = RGB{Float32}(red(diffuse_color)*red(color), green(diffuse_color)*green(color), blue(diffuse_color)*blue(color))  
+    color = colorMultiply(diffuse_color, color)  
     return color 
+end
+
+function getColor(scene::Scene, material::Glossy, ray::Ray, normal, point, tmax, rec_depth)
+    reflectDirection = reflectRay(-ray.direction, normal)
+    #if (dot(reflectDirection, normal) < 0)
+    #    return BLACK
+    #end
+    w = normalize(reflectDirection)
+    u = normalize(cross(Vec3(0.00424, 1, 0.00764), w))
+    v = cross(u, w)
+    sp = randomCosineHemi(material.specularExp) #sample hemisphere around reflectDirection
+    jittered = sp[1]*u + sp[2]*v + sp[3]*w
+    if dot(normal, jittered) < 0
+        jittered = (-sp[1])*u + (-sp[2])*v + sp[3]*w
+    end
+    phongLobe = dot(w, jittered)^material.specularExp
+    brdf_sample = material.reflectance*material.specularColor*phongLobe #k_r * c_r * dot(mirror, jittered)^e
+    pdf = phongLobe * dot(normal, jittered)
+    reflectionRay = Ray(point, jittered)
+    color = colorMultiply(brdf_sample, traceray(scene, reflectionRay, 1e-8, tmax, rec_depth - 1))
+    return color * (dot(normal, jittered)/pdf)
 end
 
 function getColor(scene::Scene, material::Dielectric, ray::Ray, normal, point, tmax, rec_depth)
