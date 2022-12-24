@@ -17,7 +17,7 @@ export pixel_to_ray, convertSubpixel
 export SAMPLES_PER_PIXEL
 
 #Divide pixel into n*n grid of subpixels
-SAMPLES_PER_PIXEL = 100
+SAMPLES_PER_PIXEL = 25
 N_SUBPIXELS = isqrt(SAMPLES_PER_PIXEL)
 
 """ The most basic perspective camera. The eye is at (0, 0, 0),
@@ -83,18 +83,18 @@ function PerspectiveCamera(eye::Vec3, view::Vec3, up::Vec3, focal::Real, canv_he
     return PerspectiveCamera(eye, u_axis, v_axis, w_axis, focal, canv_height, canv_width)
 end
 
-function pixel_to_ray(camera::PerspectiveCamera, i, j) 
+function pixel_to_ray(camera::PerspectiveCamera, subPixel::Vec2, i, j)
     # viewport height = 1
     vp_height = camera.canv_height / camera.canv_width
 
     # convert from i,j 2D array indices to (u, v) coordinates
     # with (0,0) in the center of the image
     # half pixel shift, scale down to size 1, shift origin to center
-    u =  ((j - 0.5)    / camera.canv_width       - 0.5)
+    u =  u =  ((j - subPixel[2]/N_SUBPIXELS)    / (camera.canv_width)       - 0.5)
 
     # same as u, except i increases downward so flip with a negative sign
     # and multiply by vp_height to account for aspect ratio
-    v = -((i - 0.5)    / camera.canv_height      - 0.5) * vp_height
+    v = -((i - subPixel[1]/N_SUBPIXELS)    / (camera.canv_height)      - 0.5) * vp_height
     ray_dir = u*camera.u_axis + v*camera.v_axis - camera.focal*camera.w_axis
     return Ray(camera.eye, ray_dir)
 end
