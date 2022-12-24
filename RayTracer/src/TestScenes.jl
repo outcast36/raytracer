@@ -12,8 +12,10 @@ RED = RGB{Float32}(1,0,0)
 GREEN = RGB{Float32}(0,1,0)
 BLUE = RGB{Float32}(0,0,1)
 white = RGB{Float32}(1,1,1)
-purple = RGB{Float32}(1,0,1)
+purple = RGB{Float32}(0.55,0.47,1)
 yellow = RGB{Float32}(0.92, 0.92, 0.12)
+lemon = RGB{Float32}(1.0, 1.0, 0.3)
+pink = RGB{Float32}(0.7, 0.3, 0.3)
 
 function camera_1(img_height, img_width)
     CanonicalCamera(img_height, img_width)
@@ -61,8 +63,8 @@ function scene_1()
 
     objs = []
     mat_center = Lambertian(RGB{Float32}(0.7, 0.3, 0.3), RED, 10)
-    mat_left = Metallic(left_metal, left_metal, 0.5, 0.3, 100)
-    mat_right = Metallic(right_metal, right_metal, 0.65, 1.0, 100)
+    mat_left = Metallic(left_metal, left_metal, 0.5, 100)
+    mat_right = Metallic(right_metal, right_metal, 0.65, 100)
     mat_ground = Lambertian(ground_color, white, 10)
 
     push!(objs, Sphere(Vec3(0, 0.0, -3.0), 0.5, mat_center))
@@ -141,43 +143,19 @@ function scene_4()
     Scene(bg, objs, lights)
 end
 
+
 function scene_5()
     bg = RGB{Float32}(0.5, 0.7, 1.0)
-    ground_color = RGB{Float32}(0.65, 0.8, 0.0)
-    right_metal = RGB{Float32}(0.8, 0.8, 0.2)
-
+    lime = RGB{Float32}(0.33, 0.97, 0.26)
+    mat_ground = Metallic(white, white, 10)
+    exp_100 = Glossy(lime, lime, 0.9, 100)
+    red_glossy = Glossy(bg, pink, 0.7, 1000)
+    glass = Dielectric(1.53)
     objs = []
-    mat = Lambertian(right_metal, white, 10000)
-    mat_ground = Lambertian(ground_color, white, 1)
-    push!(objs, Sphere(Vec3(0.0, 0.0, -3.5), 0.5, mat))
     push!(objs, Sphere(Vec3(0,-101,-1), 100.0, mat_ground))
-    lights = [DirectionalLight(0.6, Vec3(0, 1, 1)),
-              PointLight(0.4, Vec3(1,0,0))]
-    Scene(bg, objs, lights)
-end
-
-function scene_6()
-    bg = RGB{Float32}(0.5, 0.7, 1.0)
-    ground_color = RGB{Float32}(0.65, 0.8, 0.0)
-    right_metal = RGB{Float32}(0.8, 0.8, 0.2)
-
-    objs = []
-    mat_right = Metallic(right_metal, 0.5, 10)
-    mat_ground = Lambertian(ground_color, 1)
-    push!(objs, Sphere(Vec3(0.0, 0.0, -3.5), 0.5, mat_right))
-    push!(objs, Sphere(Vec3(0,-101,-1), 100.0, mat_ground))
-    lights = [DirectionalLight(0.6, Vec3(0, 1, 1)),
-              PointLight(0.4, Vec3(1,0,0))]
-    Scene(bg, objs, lights)
-end
-
-function scene_7()
-    bg = black
-    mat_ground = Metallic(white, white, 0.65, 0.4, 10)
-    mat_red = Lambertian(RED, RED, 10)
-    objs = []
-    push!(objs, Sphere(Vec3(0.0, 0.0, -10.5), 1.0, mat_red))
-    push!(objs, Sphere(Vec3(0,-101,-1), 100.0, mat_ground))
+    push!(objs, Sphere(Vec3(1.0, -0.1, -7.5), 1.0, exp_100))
+    push!(objs, Sphere(Vec3(0.35, -0.2, -2.9), 0.5, glass))
+    push!(objs, Sphere(Vec3(-1.0, -0.1, -6.8), 0.8, red_glossy))
     lights = [DirectionalLight(0.6, Vec3(0, 1, 1)),
     PointLight(0.4, Vec3(1,0,0))]
     Scene(bg, objs, lights)
@@ -196,6 +174,6 @@ function mesh_helper(mesh, material, scale=1.0, translation=Vec3(0,0,0))
 end
 
 
-scenes = [scene_1, scene_2, scene_3, scene_4, scene_5, scene_6, scene_7]
+scenes = [scene_1, scene_2, scene_3, scene_4, scene_5]
 
 end # module TestScenes
