@@ -130,9 +130,6 @@ end
 
 function getColor(scene::Scene, material::Glossy, ray::Ray, normal, point, tmax, rec_depth)
     reflectDirection = reflectRay(-ray.direction, normal)
-    #if (dot(reflectDirection, normal) < 0)
-    #    return BLACK
-    #end
     w = normalize(reflectDirection)
     u = normalize(cross(Vec3(0.00424, 1, 0.00764), w))
     v = cross(u, w)
@@ -177,6 +174,7 @@ function glossyReflect(r::Vec3, n::Vec3)
     #Create non-colinear vector t
     t = [w_hat[1], w_hat[2], w_hat[3]]
     t[argmin(w_hat)] = 1
+    t = Vec3(t[1], t[2], t[3])
 
     u_hat = normalize(cross(t,w_hat))
     v_hat = cross(w_hat, u_hat)
@@ -193,6 +191,7 @@ Flat shading - just color the pixel the material's diffuse color """
 function flat_color(material::Material, hitrec::HitRecord)
     get_diffuse(material, hitrec.uv)
 end
+
 """ Normal shading - color-code pixels according to their normals """
 function normal_color(normal::Vec3)
     normal_color = normalize(hitrec.normal) / 2 .+ 0.5
