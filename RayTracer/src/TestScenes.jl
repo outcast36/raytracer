@@ -7,15 +7,16 @@ using ..Lights
 using ..MeshGen
 using ..Cameras
 
-black = RGB{Float32}(0,0,0)
+# -- Color constants -- #
+BLACK = RGB{Float32}(0,0,0)
 RED = RGB{Float32}(1,0,0)
 GREEN = RGB{Float32}(0,1,0)
 BLUE = RGB{Float32}(0,0,1)
-white = RGB{Float32}(1,1,1)
-purple = RGB{Float32}(0.55,0.47,1)
-yellow = RGB{Float32}(0.92, 0.92, 0.12)
-lemon = RGB{Float32}(1.0, 1.0, 0.3)
-pink = RGB{Float32}(0.7, 0.3, 0.3)
+WHITE = RGB{Float32}(1,1,1)
+PURPLE = RGB{Float32}(0.55,0.47,1)
+LEMON = RGB{Float32}(1.0, 1.0, 0.3)
+PINK = RGB{Float32}(0.7, 0.3, 0.3)
+LIME = RGB{Float32}(0.33, 0.97, 0.26)
 
 function camera_1(img_height, img_width)
     CanonicalCamera(img_height, img_width)
@@ -40,9 +41,20 @@ function camera_3(img_height, img_width)
                  img_width) # canv_width::Int)
 end
 
+function camera_4(img_height, img_width)
+
+    Cameras.PerspectiveCamera(
+                 Vec3(2.0, 0.4, -0.7),  # eye::Vec3
+                 Vec3(-1.0, -0.1, -1), # view::Vec3
+                 Vec3(0, 1, 0),   # up::Vec3
+                 0.27,     # focal::Real
+                 img_height, # canv_height::Int
+                 img_width) # canv_width::Int)
+end
 
 
-cameras = [camera_1, camera_2, camera_3]
+
+cameras = [camera_1, camera_2, camera_3, camera_4]
 
 function get_camera(i, img_height, img_width)
     cameras[i](img_height, img_width)
@@ -63,9 +75,9 @@ function scene_1()
 
     objs = []
     mat_center = Lambertian(RGB{Float32}(0.7, 0.3, 0.3), RED, 10)
-    mat_left = Metallic(left_metal, left_metal, 0.5, 100)
-    mat_right = Metallic(right_metal, right_metal, 0.65, 100)
-    mat_ground = Lambertian(ground_color, white, 10)
+    mat_left = Metallic(left_metal, left_metal, 100)
+    mat_right = Metallic(right_metal, right_metal, 100)
+    mat_ground = Lambertian(ground_color, WHITE, 10)
 
     push!(objs, Sphere(Vec3(0, 0.0, -3.0), 0.5, mat_center))
     push!(objs, Sphere(Vec3(-1.0, 0.0, -3.5), 0.5, mat_left))
@@ -86,8 +98,8 @@ function scene_2()
     objs = []
     mat = Lambertian(RGB{Float32}(0.1, 0.2, 0.5), BLUE, 10)
     mat_left = Dielectric(1.52)
-    mat_right = Metallic(right_metal, right_metal, 0.65, 100)
-    mat_ground = Lambertian(ground_color, white, 10)
+    mat_right = Metallic(right_metal, right_metal, 100)
+    mat_ground = Lambertian(ground_color, WHITE, 10)
 
     push!(objs, Sphere(Vec3(0, 0.0, -3.0), 0.5, mat))
     push!(objs, Sphere(Vec3(-1.0, 0.0, -3.5), 0.5, mat_left))
@@ -108,8 +120,8 @@ function scene_3()
     objs = []
     mat_center = Dielectric(2.42)
     mat_left = Lambertian(RGB{Float32}(0.1, 0.2, 0.5), BLUE, 10)
-    mat_right = Metallic(right_metal, right_metal, 0.65, 100)
-    mat_ground = Lambertian(ground_color, white, 10)
+    mat_right = Metallic(right_metal, right_metal, 100)
+    mat_ground = Lambertian(ground_color, WHITE, 10)
 
     push!(objs, Sphere(Vec3(0, 0.0, -3.0), 0.5, mat_center))
     push!(objs, Sphere(Vec3(-1.0, 0.0, -3.5), 0.5, mat_left))
@@ -122,13 +134,13 @@ end
 
 """ RGB spheres on the ground with big reflective sphere on the right """
 function scene_4()
-    bg = black
+    bg = BLACK
     lightColor = RGB{Float32}(0.5, 0.5, 0.5)
 
-    r = Lambertian(RED, white, 10)
-    g = Lambertian(GREEN, white, 10)
-    b = Lambertian(BLUE, white, 10)
-    refl = Metallic(white, white, 0.5, 10)
+    r = Lambertian(RED, WHITE, 10)
+    g = Lambertian(GREEN, WHITE, 10)
+    b = Lambertian(BLUE, WHITE, 10)
+    refl = Metallic(WHITE, WHITE, 10)
 
     objs = [Sphere(Vec3(-1,  -1.1, -3), 0.5, r),
             Sphere(Vec3( -0.5,  -1.0, -4), 0.5, g),
@@ -146,16 +158,38 @@ end
 
 function scene_5()
     bg = RGB{Float32}(0.5, 0.7, 1.0)
-    lime = RGB{Float32}(0.33, 0.97, 0.26)
-    mat_ground = Metallic(white, white, 10)
-    exp_100 = Glossy(lime, lime, 0.9, 100)
-    red_glossy = Glossy(bg, pink, 0.7, 1000)
+    mat_ground = Metallic(WHITE, WHITE, 10)
+    exp_100 = Glossy(LIME, LIME, 0.9, 100)
+    red_glossy = Glossy(bg, PINK, 0.7, 1000)
     glass = Dielectric(1.53)
     objs = []
     push!(objs, Sphere(Vec3(0,-101,-1), 100.0, mat_ground))
     push!(objs, Sphere(Vec3(1.0, -0.1, -7.5), 1.0, exp_100))
     push!(objs, Sphere(Vec3(0.35, -0.2, -2.9), 0.5, glass))
     push!(objs, Sphere(Vec3(-1.0, -0.1, -6.8), 0.8, red_glossy))
+    lights = [DirectionalLight(0.6, Vec3(0, 1, 1)),
+    PointLight(0.4, Vec3(1,0,0))]
+    Scene(bg, objs, lights)
+end
+
+function scene_6()
+    bg = RGB{Float32}(0.5, 0.7, 1.0)
+    lightColor = RGB{Float32}(0.5, 0.5, 0.5)
+    grey = RGB{Float32}(0.8, 0.8, 0.8)
+    mat_ground = Metallic(PINK, PINK, 10)
+    mat_diamond = Dielectric(2.42)
+    exp_10000 = Glossy(bg, grey, 0.65, 10000)
+    exp_100 = Glossy(bg, grey, 0.65, 100)
+
+    objs = []
+    push!(objs, Sphere(Vec3(0,-101,-1), 100.0, mat_ground))
+    #push!(objs, Sphere(Vec3(2.0, 0.4, -1.3), 0.15, mat_diamond))
+    push!(objs, Sphere(Vec3(-0.4, 0.2, -4.4), 0.5, exp_10000))
+    #push!(objs, Sphere(Vec3(0.1, 0.45, -1.45), 0.5, exp_100))
+    #push!(objs, Sphere(Vec3(0.5, 0.5, -2.4), 0.5, exp_100))
+    #push!(objs, Sphere(Vec3(1.0, 0.55, -3.35), 0.5, exp_10000))
+    #push!(objs, Sphere(Vec3(1.57, 0.6, -4.4), 0.5, exp_100))
+
     lights = [DirectionalLight(0.6, Vec3(0, 1, 1)),
     PointLight(0.4, Vec3(1,0,0))]
     Scene(bg, objs, lights)
@@ -174,6 +208,6 @@ function mesh_helper(mesh, material, scale=1.0, translation=Vec3(0,0,0))
 end
 
 
-scenes = [scene_1, scene_2, scene_3, scene_4, scene_5]
+scenes = [scene_1, scene_2, scene_3, scene_4, scene_5, scene_6]
 
 end # module TestScenes
