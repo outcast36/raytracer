@@ -183,12 +183,12 @@ function scene_6()
 
     objs = []
     push!(objs, Sphere(Vec3(0,-101,-1), 100.0, mat_ground))
-    #push!(objs, Sphere(Vec3(2.0, 0.4, -1.3), 0.15, mat_diamond))
-    push!(objs, Sphere(Vec3(-0.4, 0.2, -4.4), 0.5, exp_10000))
-    #push!(objs, Sphere(Vec3(0.1, 0.45, -1.45), 0.5, exp_100))
-    #push!(objs, Sphere(Vec3(0.5, 0.5, -2.4), 0.5, exp_100))
-    #push!(objs, Sphere(Vec3(1.0, 0.55, -3.35), 0.5, exp_10000))
-    #push!(objs, Sphere(Vec3(1.57, 0.6, -4.4), 0.5, exp_100))
+    push!(objs, Sphere(Vec3(2.0, 0.4, -1.3), 0.15, mat_diamond))
+    push!(objs, Sphere(Vec3(-0.4, 0.4, -0.5), 0.5, exp_10000))
+    push!(objs, Sphere(Vec3(0.1, 0.45, -1.45), 0.5, exp_100))
+    push!(objs, Sphere(Vec3(0.5, 0.5, -2.4), 0.5, exp_100))
+    push!(objs, Sphere(Vec3(1.0, 0.55, -3.35), 0.5, exp_10000))
+    push!(objs, Sphere(Vec3(1.57, 0.6, -4.4), 0.5, exp_100))
 
     lights = [DirectionalLight(0.6, Vec3(0, 1, 1)),
     PointLight(0.4, Vec3(1,0,0))]
