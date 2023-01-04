@@ -34,4 +34,6 @@ mutable struct Glossy <: Material
     specularExp
 end
 
+#TODO: Make translucent material to keep ideal dielectric sepearate from glossy transparency?
+
 end
