@@ -17,7 +17,7 @@ export pixel_to_ray, convertSubpixel
 export SAMPLES_PER_PIXEL
 
 #Divide pixel into n*n grid of subpixels
-SAMPLES_PER_PIXEL = 25
+SAMPLES_PER_PIXEL = 256
 N_SUBPIXELS = isqrt(SAMPLES_PER_PIXEL)
 
 """ The most basic perspective camera. The eye is at (0, 0, 0),
@@ -33,7 +33,7 @@ end
 function convertSubpixel(subpix)
     sub_i = subpix%N_SUBPIXELS == 0 ? div(subpix,N_SUBPIXELS) : div(subpix,N_SUBPIXELS)+1
     sub_j = subpix%N_SUBPIXELS == 0 ? N_SUBPIXELS : subpix%N_SUBPIXELS 
-    return Vec2(6-sub_i, 6-sub_j)
+    return Vec2(N_SUBPIXELS-sub_i, N_SUBPIXELS-sub_j)
 end
 
 """ Given a camera and pixel coordinates 1-indexed, i=row,j=column],
