@@ -35,6 +35,10 @@ function light_direction(light::DirectionalLight, point::Vec3)
     return normalize(light.direction)
 end
 
+function light_direction(light::AreaLight, point::Vec3)
+    return 0
+end
+
 # point source: direction from the point to the light position, normalized
 function light_direction(light::PointLight, point::Vec3)
     return normalize(light.position - point)
