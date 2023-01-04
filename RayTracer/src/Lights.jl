@@ -21,6 +21,13 @@ struct PointLight <: Light
     position::Vec3
 end
 
+""" Model area light source as a sphere """
+struct AreaLight <: Light
+    center::Vec3
+    intensity::RGB{Float32}
+    radius
+end
+
 """ Calculate the direction of a given light source from the position point """
 function light_direction(light::Light, point::Vec3) end
 
