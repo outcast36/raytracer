@@ -36,7 +36,8 @@ function light_direction(light::DirectionalLight, point::Vec3)
 end
 
 function light_direction(light::AreaLight, point::Vec3)
-    return 0
+    samplePoint = sampleAreaLight()#randomly sample point on light geometry
+    return normalize(samplePoint - point) #direction from point to light source; normalized
 end
 
 # point source: direction from the point to the light position, normalized
