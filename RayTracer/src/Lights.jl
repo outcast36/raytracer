@@ -28,6 +28,28 @@ struct AreaLight <: Light
     radius
 end
 
+""" Sample a spherical light-source on the hemisphere visible from the point """
+function sampleAreaLight(light::AreaLight, point::Vec3)
+    #Create a basis where w is the vector from the light's center to the point
+    w = normalize(light.center - point)
+    #Create non-colinear vector t
+    t = [w[1], w[2], w[3]]
+    t[argmin(w)] = 1
+    t = Vec3(t[1], t[2], t[3])
+
+    u = normalize(cross(t,w))
+    v = cross(w, u)
+
+    if (norm(light.center - point) < light.radius^2)
+        return sampleSphere() #point inside light source
+    else
+        #compute theta and phi values for sample in cone
+        #compute angle alpha from center of sphere to sampled point on surface
+        #compute surface normal and sampled point on sphere
+        #return hitRecord for sampled point on sphere
+    end
+end
+
 """ Calculate the direction of a given light source from the position point """
 function light_direction(light::Light, point::Vec3) end
 
@@ -36,7 +58,7 @@ function light_direction(light::DirectionalLight, point::Vec3)
 end
 
 function light_direction(light::AreaLight, point::Vec3)
-    samplePoint = sampleAreaLight()#randomly sample point on light geometry
+    samplePoint = sampleAreaLight(point)#randomly sample point on light geometry
     return normalize(samplePoint - point) #direction from point to light source; normalized
 end
 
