@@ -212,6 +212,13 @@ function is_shadowed(scene, light::DirectionalLight, point::Vec3)
     return closest_intersect(scene.objects, shadow_ray, 1e-8, Inf32) !== nothing
 end
 
+""" Randomly sample points on spherical light source to determine if points are in shadow/penumbra """
+function is_shadowed(scene, light::AreaLight, point::Vec3)
+    light_vector = light_direction(light, point)
+    shadow_ray = Ray(point, light_vector) #p + tL
+    return closest_intersect(scene.objects, shadow_ray, 1e-8, 1) !== nothing
+end
+
 """ Determine the diffuse color of a physical surface """
 function shade_diffuse(material::Material, ray::Ray, normal::Vec3, point::Vec3, scene::Scene)
     color = BLACK 
