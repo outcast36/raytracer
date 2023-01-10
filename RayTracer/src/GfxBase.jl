@@ -1,6 +1,6 @@
 module GfxBase
 
-export Vec3, Vec2, Ray, randomUnitSphere, randomHemiSphere, randomCosineHemi, colorMultiply
+export Vec3, Vec2, Ray, randomUnitSphere, randomHemiSphere, randomCosineHemi, colorMultiply, uniformSampleSphere
 
 using Images
 using StaticArrays
@@ -60,6 +60,14 @@ end
 """ Multiply two RGB colors channelwise """
 function colorMultiply(a, b)
     return RGB{Float32}(a.r*b.r, a.g*b.g, a.b*b.b)
+end
+
+""" Uniformly sample over sphere's surface area """
+function uniformSampleSphere(sp::Vec2)
+    z = 1 - 2*sp[1]
+    r = sqrt(max(0, 1 - z^2))
+    phi = 2 * pi * sp[2]
+    return Vec3(r*cos(phi), r*sin(phi), z)
 end
 
 end # module GfxBase
