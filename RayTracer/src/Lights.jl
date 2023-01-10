@@ -2,7 +2,7 @@ module Lights
 
 using LinearAlgebra
 
-export Light, DirectionalLight, AmbientLight, PointLight
+export Light, DirectionalLight, AmbientLight, PointLight, AreaLight
 export light_direction, shade_light
 
 using ..GfxBase
@@ -48,7 +48,7 @@ function sampleAreaLight(light::AreaLight, point::Vec3)
         #compute theta and phi values for sample in cone
         sinThetaMax2 = (radius^2)/(dot(light.center - point, light.center - point))
         cosThetaMax = sqrt(max(0, 1 - sinThetaMax2))
-        cosTheta = (1 - sample[1]) + sp[1] * cosThetaMax
+        cosTheta = (1 - sp[1]) + sp[1] * cosThetaMax
         sinTheta = sqrt(max(0, 1 - cosTheta^2))
         phi = 2*pi*sp[2]
 
@@ -73,7 +73,7 @@ end
 
 function light_direction(light::AreaLight, point::Vec3)
     samplePoint = sampleAreaLight(light, point)#randomly sample point on light geometry
-    return normalize(samplePoint - point) #direction from point to light source; normalized
+    return samplePoint - point #direction from point to light source; normalized
 end
 
 # point source: direction from the point to the light position, normalized
@@ -128,8 +128,8 @@ end
 function shade_light(material, ray::Ray, normal::Vec3, intersection::Vec3, light::AreaLight)
     #Irradiance calculations
     light_vector = light_direction(light, intersection)
-    distFromLight = norm(intersection - light.position)
-    n_dot_l = dot(normal, light_vector)
+    distFromLight = norm(light_vector)
+    n_dot_l = dot(normal, normalize(light_vector))
     irradiance = light.intensity * (1/(distFromLight^2)) * max(0, n_dot_l) #RGB color
 
     #!! -- RGB color * RGB color -- !!#
