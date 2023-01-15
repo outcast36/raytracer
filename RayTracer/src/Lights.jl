@@ -23,8 +23,8 @@ end
 
 """ Model area light source as a sphere """
 struct AreaLight <: Light
-    center::Vec3
     intensity::RGB{Float32}
+    center::Vec3
     radius
 end
 
