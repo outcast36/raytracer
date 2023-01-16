@@ -1,5 +1,6 @@
 module Surface
 
+export Sphere, HitRecord, ray_intersect
 using LinearAlgebra
 
 """ Structure to store data about an intersection
