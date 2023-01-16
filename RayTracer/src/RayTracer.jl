@@ -213,10 +213,24 @@ function is_shadowed(scene, light::DirectionalLight, point::Vec3)
 end
 
 """ Randomly sample points on spherical light source to determine if points are in shadow/penumbra """
-function is_shadowed(scene, light::AreaLight, point::Vec3)
-    light_vector = light_direction(light, point)
+function areaLightOcclusion(light::AreaLight, intersection::Vec3, xPrime::Vec3)
+    light_vector = normalize(xPrime - intersection)
     shadow_ray = Ray(point, light_vector) #p + tL
     return closest_intersect(scene.objects, shadow_ray, 1e-8, 1) !== nothing
+end
+
+function integrateAreaLight(material, light::AreaLight, ray::Ray, intersection::Vec3, normal::Vec3, sampleCount)
+    light_val = BLACK
+    for i in 1:sampleCount
+        xp = sampleAreaLight(light, intersection)
+        pdf_xp = areaLightPDF(light, intersection)
+        brdf_val = areaLightBRDF(material, light, ray, normal, intersection, xp)
+        if ((brdf_val > 0) && (!areaLightOcclusion(light, intersection, xp)))
+            light_val += brdf_val * (1.0f / pdf_xp) * light.intensity
+        end
+    end
+    light_val *= (1/sampleCount)
+    return light_val
 end
 
 """ Determine the diffuse color of a physical surface """
@@ -224,9 +238,8 @@ function shade_diffuse(material::Material, ray::Ray, normal::Vec3, point::Vec3, 
     color = BLACK 
     for i in 1:length(scene.lights) #for each light in the scene:
         cur_light = scene.lights[i]
-        if !is_shadowed(scene, cur_light, point)
-            light_val = shade_light(material, ray, normal, point, cur_light) #determine the light's contribution
-            color += light_val #add the light's contribution into the color
+        light_val = integrateAreaLight(material, cur_light, ray, point, normal, 25)
+        color += light_val #add the light's contribution into the color
         end
     end
     return color
