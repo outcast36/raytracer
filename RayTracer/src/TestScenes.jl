@@ -195,6 +195,22 @@ function scene_6()
     Scene(bg, objs, lights)
 end
 
+function scene_7()
+    bg = RGB{Float32}(0.5, 0.7, 1.0)
+    centerColor = RGB{Float32}(0.0, 0.8, 1.0)
+    lightColor = RGB{Float32}(0.5, 0.5, 0.5)
+    mat_ground = Metallic(WHITE, WHITE, 10)
+    mat_center = Lambertian(centerColor, WHITE, 100)
+
+    objs = []
+    push!(objs, Sphere(Vec3(0,-101,-1), 100.0, mat_ground))
+    push!(objs, Sphere(Vec3(0.0, 0.25, -4.0), 0.6, mat_center))
+
+    lights = [AreaLight(lightColor, Vec3(1, 1, 0), 0.5), DirectionalLight(lightColor, Vec3(0, 1, 1))]
+    #lights = [PointLight(lightColor, Vec3(1,1,0))]
+    Scene(bg, objs, lights)
+end
+
 """ Take the OBJMesh mesh and return an array of Triangles from the mesh
 with the given material, after scaling the mesh positions by scale and moving
 them by translation """
@@ -208,6 +224,6 @@ function mesh_helper(mesh, material, scale=1.0, translation=Vec3(0,0,0))
 end
 
 
-scenes = [scene_1, scene_2, scene_3, scene_4, scene_5, scene_6]
+scenes = [scene_1, scene_2, scene_3, scene_4, scene_5, scene_6, scene_7]
 
 end # module TestScenes
