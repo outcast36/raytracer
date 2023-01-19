@@ -213,34 +213,49 @@ function is_shadowed(scene, light::DirectionalLight, point::Vec3)
 end
 
 """ Randomly sample points on spherical light source to determine if points are in shadow/penumbra """
-function areaLightOcclusion(light::AreaLight, intersection::Vec3, xPrime::Vec3)
+function areaLightOcclusion(scene, light::AreaLight, intersection::Vec3, xPrime::Vec3)
     light_vector = normalize(xPrime - intersection)
-    shadow_ray = Ray(point, light_vector) #p + tL
+    shadow_ray = Ray(intersection, light_vector) #p + tL
     return closest_intersect(scene.objects, shadow_ray, 1e-8, 1) !== nothing
 end
 
-function integrateAreaLight(material, light::AreaLight, ray::Ray, intersection::Vec3, normal::Vec3, sampleCount)
+function integrateAreaLight(material, scene, light::AreaLight, ray::Ray, intersection::Vec3, normal::Vec3, sampleCount)
     light_val = BLACK
     for i in 1:sampleCount
         xp = sampleAreaLight(light, intersection)
+        lightVec = normalize(xp - intersection)
+        lightNormal = (1/light.radius) * (xp - light.center)
         pdf_xp = areaLightPDF(light, intersection)
         brdf_val = areaLightBRDF(material, light, ray, normal, intersection, xp)
-        if ((brdf_val > 0) && (!areaLightOcclusion(light, intersection, xp)))
-            light_val += brdf_val * (1.0f / pdf_xp) * light.intensity
+        if (!areaLightOcclusion(scene, light, intersection, xp)) #((dot(normal, lightVec) > 0) && (!areaLightOcclusion(scene, light, intersection, xp)))
+            light_val += (dot(xp-intersection, xp-intersection)*dot(lightVec, normal)*(1/dot(-lightVec, lightNormal))*(1/pdf_xp) * brdf_val) #
         end
     end
     light_val *= (1/sampleCount)
     return light_val
 end
 
+#""" Determine the diffuse color of a physical surface """
+#function shade_diffuse(material::Material, ray::Ray, normal::Vec3, point::Vec3, scene::Scene)
+#    color = BLACK 
+#    for i in 1:length(scene.lights) #for each light in the scene:
+#        cur_light = scene.lights[i]
+#        if !is_shadowed(scene, cur_light, point)
+#            light_val = shade_light(material, ray, normal, point, cur_light) #determine the light's contribution
+#            color += light_val #add the light's contribution into the color
+#        end
+#    end
+#    return color
+#end
+
 """ Determine the diffuse color of a physical surface """
 function shade_diffuse(material::Material, ray::Ray, normal::Vec3, point::Vec3, scene::Scene)
     color = BLACK 
     for i in 1:length(scene.lights) #for each light in the scene:
         cur_light = scene.lights[i]
-        light_val = integrateAreaLight(material, cur_light, ray, point, normal, 25)
+        light_val = integrateAreaLight(material, scene, cur_light, ray, point, normal, 25)
+        #println("BRDF value: ", light_val)
         color += light_val #add the light's contribution into the color
-        end
     end
     return color
 end
@@ -274,4 +289,3 @@ function main(scene, camera, height, width, outfile)
 end
 
 end # module RayTracer
-
