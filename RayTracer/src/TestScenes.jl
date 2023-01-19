@@ -174,40 +174,22 @@ end
 
 function scene_6()
     bg = RGB{Float32}(0.5, 0.7, 1.0)
-    lightColor = RGB{Float32}(0.5, 0.5, 0.5)
-    grey = RGB{Float32}(0.8, 0.8, 0.8)
-    mat_ground = Metallic(PINK, PINK, 10)
-    mat_diamond = Dielectric(2.42)
-    exp_10000 = Glossy(bg, grey, 0.65, 10000)
-    exp_100 = Glossy(bg, grey, 0.65, 100)
-
-    objs = []
-    push!(objs, Sphere(Vec3(0,-101,-1), 100.0, mat_ground))
-    push!(objs, Sphere(Vec3(2.0, 0.4, -1.3), 0.15, mat_diamond))
-    push!(objs, Sphere(Vec3(-0.4, 0.4, -0.5), 0.5, exp_10000))
-    push!(objs, Sphere(Vec3(0.1, 0.45, -1.45), 0.5, exp_100))
-    push!(objs, Sphere(Vec3(0.5, 0.5, -2.4), 0.5, exp_100))
-    push!(objs, Sphere(Vec3(1.0, 0.55, -3.35), 0.5, exp_10000))
-    push!(objs, Sphere(Vec3(1.57, 0.6, -4.4), 0.5, exp_100))
-
-    lights = [DirectionalLight(0.6, Vec3(0, 1, 1)),
-    PointLight(0.4, Vec3(1,0,0))]
-    Scene(bg, objs, lights)
-end
-
-function scene_7()
-    bg = RGB{Float32}(0.5, 0.7, 1.0)
     centerColor = RGB{Float32}(0.0, 0.8, 1.0)
     lightColor = RGB{Float32}(0.5, 0.5, 0.5)
+    bronze = RGB{Float32}(0.72, 0.45, 0.2)
     mat_ground = Metallic(WHITE, WHITE, 10)
     mat_center = Lambertian(centerColor, WHITE, 100)
+    mat_diamond = Dielectric(2.42)
+    mat_bronze = Metallic(bronze, bronze, 1000)
 
     objs = []
     push!(objs, Sphere(Vec3(0,-101,-1), 100.0, mat_ground))
-    push!(objs, Sphere(Vec3(0.0, 0.25, -4.0), 0.6, mat_center))
+    push!(objs, Sphere(Vec3(1.0, -0.1, -3.2), 0.5, mat_center))
+    push!(objs, Sphere(Vec3(0.2, 0.1, -4.5), 0.7, mat_diamond))
+    push!(objs, Sphere(Vec3(-1.1, 0.3, -6.5), 1.1, mat_bronze))
 
-    lights = [AreaLight(lightColor, Vec3(1, 1, 0), 0.5), DirectionalLight(lightColor, Vec3(0, 1, 1))]
-    #lights = [PointLight(lightColor, Vec3(1,1,0))]
+    lights = [AreaLight(lightColor, Vec3(1.5, 1.5, 0.0), 2.0)] #
+    #lights = [PointLight(lightColor, Vec3(1,1,0)), DirectionalLight(lightColor, Vec3(0, 1, 1))]
     Scene(bg, objs, lights)
 end
 
@@ -224,6 +206,6 @@ function mesh_helper(mesh, material, scale=1.0, translation=Vec3(0,0,0))
 end
 
 
-scenes = [scene_1, scene_2, scene_3, scene_4, scene_5, scene_6, scene_7]
+scenes = [scene_1, scene_2, scene_3, scene_4, scene_5, scene_6]
 
 end # module TestScenes
