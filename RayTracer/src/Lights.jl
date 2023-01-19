@@ -7,7 +7,6 @@ export light_direction, shade_light
 export sampleAreaLight, areaLightPDF, areaLightBRDF
 
 using ..GfxBase
-using ..Scenes
 
 # Light types:
 #  - directional is a distant source whose direction is always the same
@@ -31,7 +30,7 @@ struct AreaLight <: Light
 end
 
 """ Sample from the solid angle subtended by a spherical light source and return a point x' on the light's surface """
-function sampleAreaLight(light::AreaLight, point::Vec3)
+function sampleAreaLight(light::AreaLight, intersection::Vec3)
     c = light.center
     r = light.radius
 
@@ -47,7 +46,7 @@ function sampleAreaLight(light::AreaLight, point::Vec3)
     v = cross(w, u)
 
     #compute theta and phi values for sample in cone
-    sinThetaMax2 = (radius^2)/(dot(light.center - point, light.center - point))
+    sinThetaMax2 = (r^2)/(dot(a, a))
     cosThetaMax = sqrt(max(0, 1 - sinThetaMax2))
     sp = Vec2(rand(), rand())
     cosTheta = (1 - sp[1]) + sp[1] * cosThetaMax
@@ -64,9 +63,9 @@ end
 
 """ Probability of having sampled x' """
 function areaLightPDF(light::AreaLight, point::Vec3)
-    sinThetaMax2 = (radius^2)/(dot(light.center - point, light.center - point))
+    sinThetaMax2 = (light.radius^2)/(dot(light.center - point, light.center - point))
     cosThetaMax = sqrt(max(0, 1 - sinThetaMax2))
-    pdf= 1 / (2*pi*(1 - cosThetaMax))
+    pdf = 1 / (2*pi*(1 - cosThetaMax))
     return pdf
 end
 
@@ -88,7 +87,6 @@ function areaLightBRDF(material, light::AreaLight, ray::Ray, normal::Vec3, inter
 
     #!! -- RGB color * RGB color -- !!#
     specular_light = (max(0, n_dot_h)^material.specularExp) * colorMultiply(material.specularColor, irradiance)
-    
     return diffuse_light + specular_light #RGB color + RGB color
 end
     
