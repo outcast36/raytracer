@@ -68,7 +68,7 @@ function ray_intersect(ray::Ray, object::Sphere)
             t_1 = (-half_b + sqrt(discriminant))/a
             intersection_pt = ray.origin + t_1 * ray.direction
         end
-        surface_normal = normalize(inverse_radius * Vec3(intersection_pt-object.center))
+        surface_normal = inverse_radius * Vec3(intersection_pt-object.center)
 
         #Textures
         d = normalize(intersection_pt- object.center) #D is vector from intersection point to sphere center
