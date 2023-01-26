@@ -1,6 +1,6 @@
 module GfxBase
 
-export Vec3, Vec2, Ray, randomUnitSphere, randomHemiSphere, randomCosineHemi, colorMultiply, uniformSampleSphere
+export Vec3, Vec2, Ray, randomUnitSphere, randomHemiSphere, randomCosineHemi, colorMultiply, uniformSampleSphere, randomUnitDisk
 
 using Images
 using StaticArrays
@@ -68,6 +68,15 @@ function uniformSampleSphere(sp::Vec2)
     r = sqrt(max(0, 1 - z^2))
     phi = 2 * pi * sp[2]
     return Vec3(r*cos(phi), r*sin(phi), z)
+end
+
+function randomUnitDisk()
+    while (true)
+        p = Vec2(random_float(-1,1), random_float(-1,1))
+        if (norm(p) < 1)
+            return p
+        end
+    end
 end
 
 end # module GfxBase
