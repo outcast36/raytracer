@@ -44,10 +44,11 @@ end
 function camera_4(img_height, img_width)
 
     Cameras.PerspectiveCamera(
-                 Vec3(2.0, 0.4, -0.7),  # eye::Vec3
-                 Vec3(-1.0, -0.1, -1), # view::Vec3
+                 Vec3(0, 0.0, 0.0),  # eye::Vec3
+                 Vec3(0.0, 0.0, -1.0), # view::Vec3
                  Vec3(0, 1, 0),   # up::Vec3
-                 0.27,     # focal::Real
+                 3.0,     # focal::Real
+                 22.0,     #aperture number n
                  img_height, # canv_height::Int
                  img_width) # canv_width::Int)
 end
@@ -83,8 +84,8 @@ function scene_1()
     push!(objs, Sphere(Vec3(-1.0, 0.0, -3.5), 0.5, mat_left))
     push!(objs, Sphere(Vec3(1.0, 0.0, -3.5), 0.5, mat_right))
     push!(objs, Sphere(Vec3(0,-101,-1), 100.0, mat_ground))
-    lights = [DirectionalLight(lightColor, Vec3(0, 1, 1)),
-              PointLight(lightColor, Vec3(1,0,0))]
+    lights = [AreaLight(lightColor, Vec3(1.5, 1.5, 0.0), 2.0)]
+    #lights = [DirectionalLight(lightColor, Vec3(0, 1, 1)), PointLight(lightColor, Vec3(1,0,0))]
     Scene(bg, objs, lights)
 end
 
@@ -105,8 +106,9 @@ function scene_2()
     push!(objs, Sphere(Vec3(-1.0, 0.0, -3.5), 0.5, mat_left))
     push!(objs, Sphere(Vec3(1.0, 0.0, -3.5), 0.5, mat_right))
     push!(objs, Sphere(Vec3(0,-101,-1), 100.0, mat_ground))
-    lights = [DirectionalLight(lightColor, Vec3(0, 1, 1)),
-              PointLight(lightColor, Vec3(1,0,0))]
+
+    lights = [AreaLight(lightColor, Vec3(1.5, 1.5, 0.0), 2.0)]
+    #lights = [DirectionalLight(lightColor, Vec3(0, 1, 1)), PointLight(lightColor, Vec3(1,0,0))]
     Scene(bg, objs, lights)
 end
 
@@ -127,8 +129,9 @@ function scene_3()
     push!(objs, Sphere(Vec3(-1.0, 0.0, -3.5), 0.5, mat_left))
     push!(objs, Sphere(Vec3(1.0, 0.0, -3.5), 0.5, mat_right))
     push!(objs, Sphere(Vec3(0,-101,-1), 100.0, mat_ground))
-    lights = [DirectionalLight(lightColor, Vec3(0, 1, 1)),
-              PointLight(lightColor, Vec3(1,0,0))]
+
+    lights = [AreaLight(lightColor, Vec3(1.5, 1.5, 0.0), 2.0)]
+    #lights = [DirectionalLight(lightColor, Vec3(0, 1, 1)), PointLight(lightColor, Vec3(1,0,0))]
     Scene(bg, objs, lights)
 end
 
@@ -149,8 +152,8 @@ function scene_4()
             Sphere(Vec3(  0, -101, 0), 100, refl) # floor
            ]
 
-    lights = [DirectionalLight(lightColor, Vec3(-1, 2, 1)),
-              PointLight(lightColor, Vec3(-4, -1, 2))]
+    lights = [AreaLight(lightColor, Vec3(1.5, 1.5, 0.0), 2.0)]
+    #lights = [DirectionalLight(lightColor, Vec3(-1, 2, 1)), PointLight(lightColor, Vec3(-4, -1, 2))]
 
     Scene(bg, objs, lights)
 end
@@ -158,6 +161,7 @@ end
 
 function scene_5()
     bg = RGB{Float32}(0.5, 0.7, 1.0)
+    lightColor = RGB{Float32}(0.5, 0.5, 0.5)
     mat_ground = Metallic(WHITE, WHITE, 10)
     exp_100 = Glossy(LIME, LIME, 0.9, 100)
     red_glossy = Glossy(bg, PINK, 0.7, 1000)
@@ -167,15 +171,16 @@ function scene_5()
     push!(objs, Sphere(Vec3(1.0, -0.1, -7.5), 1.0, exp_100))
     push!(objs, Sphere(Vec3(0.35, -0.2, -2.9), 0.5, glass))
     push!(objs, Sphere(Vec3(-1.0, -0.1, -6.8), 0.8, red_glossy))
-    lights = [DirectionalLight(0.6, Vec3(0, 1, 1)),
-    PointLight(0.4, Vec3(1,0,0))]
+    
+    lights = [AreaLight(lightColor, Vec3(1.5, 1.5, 0.0), 2.0)]
+    #lights = [DirectionalLight(0.6, Vec3(0, 1, 1)), PointLight(0.4, Vec3(1,0,0))]
     Scene(bg, objs, lights)
 end
 
 function scene_6()
     bg = RGB{Float32}(0.5, 0.7, 1.0)
     centerColor = RGB{Float32}(0.0, 0.8, 1.0)
-    lightColor = RGB{Float32}(0.5, 0.5, 0.5)
+    lightColor = RGB{Float32}(0.6, 0.6, 0.6)
     bronze = RGB{Float32}(0.72, 0.45, 0.2)
     mat_ground = Metallic(WHITE, WHITE, 10)
     mat_center = Lambertian(centerColor, WHITE, 100)
@@ -189,7 +194,7 @@ function scene_6()
     push!(objs, Sphere(Vec3(-1.1, 0.3, -6.5), 1.1, mat_bronze))
 
     lights = [AreaLight(lightColor, Vec3(1.5, 1.5, 0.0), 2.0)] #
-    #lights = [PointLight(lightColor, Vec3(1,1,0)), DirectionalLight(lightColor, Vec3(0, 1, 1))]
+    #lights = [PointLight(lightColor, Vec3(-0.025, 2.033, -1.178)), DirectionalLight(lightColor, Vec3(0, 1, 1))]
     Scene(bg, objs, lights)
 end
 
