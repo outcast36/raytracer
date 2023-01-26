@@ -219,19 +219,21 @@ function areaLightOcclusion(scene, light::AreaLight, intersection::Vec3, xPrime:
     return closest_intersect(scene.objects, shadow_ray, 1e-8, 1) !== nothing
 end
 
-function integrateAreaLight(material, scene, light::AreaLight, ray::Ray, intersection::Vec3, normal::Vec3, sampleCount)
+""" Sample a point on a spherical area light and perform shading calculations as if it were a point light source """
+function shadeAreaLight(material, scene, light::AreaLight, ray::Ray, intersection::Vec3, normal::Vec3, sampleCount)
     light_val = BLACK
-    for i in 1:sampleCount
-        xp = sampleAreaLight(light, intersection)
-        lightVec = normalize(xp - intersection)
-        lightNormal = (1/light.radius) * (xp - light.center)
-        pdf_xp = areaLightPDF(light, intersection)
-        brdf_val = areaLightBRDF(material, light, ray, normal, intersection, xp)
-        if (!areaLightOcclusion(scene, light, intersection, xp)) #((dot(normal, lightVec) > 0) && (!areaLightOcclusion(scene, light, intersection, xp)))
-            light_val += (dot(xp-intersection, xp-intersection)*dot(lightVec, normal)*(1/dot(-lightVec, lightNormal))*(1/pdf_xp) * brdf_val) #
-        end
+    xp = sampleAreaLight(light, intersection)
+    lightVec = normalize(xp - intersection)
+    lightNormal = (1/light.radius) * (xp - light.center)
+    cosTheta = dot(lightVec, normal) #Theta is angle between psi' and surface normal at intersection point
+    cosThetaPrime = dot(-lightVec, lightNormal) #Theta' is angle between psi' and surface normal at point x'
+    distSquared = dot(xp-intersection, xp-intersection)
+    pdf_xp = areaLightPDF(light, intersection)
+    brdf_val = areaLightBRDF(material, light, ray, normal, intersection, xp)
+    if (!areaLightOcclusion(scene, light, intersection, xp)) #g(x, x') == 1 aka point x is not shadowed wrt x'
+        light_val = (brdf_val*cosTheta)*(1/pdf_xp)*(distSquared/cosThetaPrime) #In theory final factor is cancelled out? 
+        return light_val
     end
-    light_val *= (1/sampleCount)
     return light_val
 end
 
@@ -254,7 +256,6 @@ function shade_diffuse(material::Material, ray::Ray, normal::Vec3, point::Vec3, 
     for i in 1:length(scene.lights) #for each light in the scene:
         cur_light = scene.lights[i]
         light_val = integrateAreaLight(material, scene, cur_light, ray, point, normal, 25)
-        #println("BRDF value: ", light_val)
         color += light_val #add the light's contribution into the color
     end
     return color
