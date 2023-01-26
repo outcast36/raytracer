@@ -46,11 +46,11 @@ function pixel_to_ray(camera::CanonicalCamera, subPixel::Vec2, i, j)
     # convert from i,j 2D array indices to (u, v) coordinates
     # with (0,0) in the center of the image
     # half pixel shift, scale down to size 1, shift origin to center
-    u =  ((j - subPixel[2]/N_SUBPIXELS)    / (camera.canv_width)       - 0.5)
+    u =  ((j - subPixel[2]/N_SUBPIXELS) / (camera.canv_width) - 0.5)
 
     # same as u, except i increases downward so flip with a negative sign
     # and multiply by vp_height to account for aspect ratio
-    v = -((i - subPixel[1]/N_SUBPIXELS)    / (camera.canv_height)      - 0.5) * vp_height
+    v = -((i - subPixel[1]/N_SUBPIXELS) / (camera.canv_height) - 0.5) * vp_height
 
     # focal length is 1, pointing down the -z axis
     w = -1.0
@@ -69,18 +69,19 @@ mutable struct PerspectiveCamera
 
     # the viewport is width 1, parallel to the uv plane and
     # centered at (0, 0, -focal):
-    focal::Real # focal length (aka d), the distance to the image plane
+    focalLength::Real #The distance from the lens to the focal plane.
+    aperture_n::Real #Aperture number n
 
     # image dimensions:
     canv_height::Int # image height in pixels
     canv_width::Int # image width in pixels
 end
 
-function PerspectiveCamera(eye::Vec3, view::Vec3, up::Vec3, focal::Real, canv_height::Int, canv_width::Int)
+function PerspectiveCamera(eye::Vec3, view::Vec3, up::Vec3, focal::Real, aperture_n::Real, canv_height::Int, canv_width::Int)
     w_axis = normalize(-view)
     u_axis = normalize(cross(up, w_axis))
     v_axis = normalize(cross(w_axis, u_axis))
-    return PerspectiveCamera(eye, u_axis, v_axis, w_axis, focal, canv_height, canv_width)
+    return PerspectiveCamera(eye, u_axis, v_axis, w_axis, focal, aperture_n, canv_height, canv_width)
 end
 
 function pixel_to_ray(camera::PerspectiveCamera, subPixel::Vec2, i, j)
@@ -90,13 +91,20 @@ function pixel_to_ray(camera::PerspectiveCamera, subPixel::Vec2, i, j)
     # convert from i,j 2D array indices to (u, v) coordinates
     # with (0,0) in the center of the image
     # half pixel shift, scale down to size 1, shift origin to center
-    u =  u =  ((j - subPixel[2]/N_SUBPIXELS)    / (camera.canv_width)       - 0.5)
+    u = ((j - subPixel[2]/N_SUBPIXELS) / (camera.canv_width) - 0.5)
 
     # same as u, except i increases downward so flip with a negative sign
     # and multiply by vp_height to account for aspect ratio
-    v = -((i - subPixel[1]/N_SUBPIXELS)    / (camera.canv_height)      - 0.5) * vp_height
-    ray_dir = u*camera.u_axis + v*camera.v_axis - camera.focal*camera.w_axis
-    return Ray(camera.eye, ray_dir)
+    v = -((i - subPixel[1]/N_SUBPIXELS) / (camera.canv_height) - 0.5) * vp_height
+
+    lensPoint = camera.focalLength/(2*camera.aperture_n) * randomUnitDisk() #lens diameter is F/n where F is focal length of the lens and n is the aperture number (Cook 1984).
+    px = u*(camera.focalLength)
+    py = v*(camera.focalLength) #/d?
+    ray_dir = (px - lensPoint[1])*camera.u_axis + (py - lensPoint[2])*camera.v_axis - camera.focalLength*camera.w_axis
+    ray_dir = normalize(ray_dir)
+    ray_origin = camera.eye + lensPoint[1]*camera.u_axis + lensPoint[2]*camera.v_axis #camera.eye + offset
+    #ray_dir = u*camera.u_axis + v*camera.v_axis - camera.focalLength*camera.w_axis
+    return Ray(ray_origin, ray_dir)
 end
 
 end # module Cameras
