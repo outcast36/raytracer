@@ -225,20 +225,47 @@ function cylinder_mesh(divisionsU)
     normals = []
     uvs = []
     triangles = []
-
     theta = (2*pi)/divisionsU
+    sinTheta = sin(theta) 
+    cosTheta = cos(theta)
+    isinTheta = sin(-theta)#Negate angle to rotate counter clockwise around y-axis
+    icosTheta =cos(-theta)
+    ind = 0
+    
     push!(positions, Vec3(0,1,0)) #Top center
     push!(positions, Vec3(0,-1,0)) #Bottom center
-    push!(positions, Vec3(1,1,0))
-    push!(positions, Vec3(1,-1,0))
-    
+    push!(positions, Vec3(0,1,-1))
+    push!(positions, Vec3(0,-1,-1))
+
     push!(normals, Vec3(0,1,0))
     push!(normals, Vec3(0,-1,0))
-    x = 1 
-    z = 0
-    for i in 1:2:2*divisionsU
-        rot_x = x*cos(theta) - z*sin(theta)
-        rot_z = z*cos(theta) + x*sin(theta)
+
+    push!(uvs, Vec2(0.75, 0.75)) #Top center texture (u,v) = (0.75, 0.75)
+    push!(uvs, Vec2(0.25, 0.75)) #Bottom center texture (u,v) = (0.25, 0.75)
+    #Shell Textures
+    push!(uvs, Vec2(0, 0.5)) 
+    push!(uvs, Vec2(0, 0))
+    #Cap textures
+    push!(uvs, Vec2(0.75, 1)) 
+    push!(uvs, Vec2(0.25, 0.5))
+    
+    x = 0 
+    z = -1
+
+    uTop = 0.75
+    vTop = 1.0
+    uBot = 0.25
+    vBot = 0.5
+    for i in 1:2:2*divisionsU #Geometry forms by rotating counter-clockwise in a coordinate system with x to the right and z pointing down
+        rot_x = x*icosTheta - z*isinTheta
+        rot_z = z*icosTheta + x*isinTheta
+
+        #Rotate points (uTop, vTop) and (uBot, vBot) about their respective centers 
+        rot_uTop = 0.75 + (uTop-0.75)*cosTheta - (vTop-0.75)*sinTheta
+        rot_vTop = 0.75 + (uTop-0.75)*sinTheta + (vTop-0.75)*cosTheta 
+        rot_uBot = 0.25 + (uBot-0.25)*cosTheta + (vBot-0.75)*sinTheta
+        rot_vBot = 0.75 - (uBot-0.25)*sinTheta + (vBot-0.75)*cosTheta
+
         normal_index = 3+div(i,2)
         push!(normals, normalize(positions[i+2] - positions[1])) 
         
@@ -246,21 +273,37 @@ function cylinder_mesh(divisionsU)
             push!(positions, Vec3(rot_x, 1, rot_z))
             push!(positions, Vec3(rot_x, -1, rot_z))
 
-            push!(triangles, OBJTriangle([1, i+4, i+2], [], [1,1,1])) #Top cap tris
+            #Shell textures
+            u = (theta*(1 + ind/2))/(2*pi) 
+            push!(uvs, Vec2(u, 0.5)) #Top vertex
+            push!(uvs, Vec2(u, 0)) #Bottom vertex
+
+            #Cap textures
+            push!(uvs, Vec2(rot_uTop, rot_vTop)) #Top cap texture
+            push!(uvs, Vec2(rot_uBot, rot_vBot)) #Bottom cap texture
+
+            push!(triangles, OBJTriangle([1, i+2, i+4], [1, i+4+ind, i+8+ind], [1,1,1])) #Top cap tris
             #Shell tris
-            push!(triangles, OBJTriangle([i+2, i+4, i+5], [], [normal_index, (normal_index+1), (normal_index+1)])) 
-            push!(triangles, OBJTriangle([i+5, i+3, i+2], [], [(normal_index+1), normal_index, normal_index]))
-            push!(triangles, OBJTriangle([2, i+3, i+5], [], [2,2,2])) #Bottom cap tris
+            push!(triangles, OBJTriangle([i+2, i+5, i+4], [i+2+ind, i+7+ind, i+6+ind], [normal_index, (normal_index+1), (normal_index+1)])) #2 points on top, one on bottom
+            push!(triangles, OBJTriangle([i+5, i+2, i+3], [i+7+ind, i+2+ind, i+3+ind], [(normal_index+1), normal_index, normal_index]))
+            push!(triangles, OBJTriangle([2, i+5, i+3], [2, i+9+ind, i+5+ind], [2,2,2])) #Bottom cap tris
         else
+            push!(uvs, Vec2(1.0, 0.5))
+            push!(uvs, Vec2(1.0, 0.0))
             #Last "wedge" tris
-            push!(triangles, OBJTriangle([1, 3, i+2], [], [1,1,1])) #Top
+            push!(triangles, OBJTriangle([1, i+2, 3], [1, i+4+ind, 5], [1,1,1])) #Top
             #Shell tris
-            push!(triangles, OBJTriangle([i+2, 3, 4], [], [normal_index, 3, 3])) 
-            push!(triangles, OBJTriangle([i+2, 4, i+3], [], [normal_index, 3, normal_index]))
-            push!(triangles, OBJTriangle([2, i+3, 4], [], [2,2,2])) #Bottom
+            push!(triangles, OBJTriangle([i+2, 4, 3], [i+2+ind, i+7+ind, i+6+ind], [normal_index, 3, 3])) 
+            push!(triangles, OBJTriangle([i+2, i+3, 4], [i+2+ind, i+3+ind, i+7+ind], [normal_index, 3, normal_index]))
+            push!(triangles, OBJTriangle([2, 4, i+3], [2, 6, i+5+ind], [2,2,2])) #Bottom
         end
         x = rot_x
         z = rot_z
+        uTop = rot_uTop
+        vTop = rot_vTop
+        uBot = rot_uBot
+        vBot = rot_vBot
+        ind+=2
     end
     return OBJMesh(positions, uvs, normals, triangles)
 end
@@ -274,8 +317,7 @@ divisions from pole to pole along each line of longitude. The North pole is at
 in the x = 0 plane with z > 0. The u texture coordinate depends on longitude,
 with u=0 at 180 degrees West and u=1 at 180 degrees East. The v texture
 coordinate varies with latitude with v=0 at the South pole and v=1 at the North
-pole. Normals should be normal to the ideal sphere surface. See the assignment
-for a diagram and further details. """
+pole. Normals should be normal to the ideal sphere surface. """
 function sphere_mesh(n, m)
     # TODO - feel free to drop in your A1 solution code here
 end
