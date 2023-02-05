@@ -319,7 +319,68 @@ with u=0 at 180 degrees West and u=1 at 180 degrees East. The v texture
 coordinate varies with latitude with v=0 at the South pole and v=1 at the North
 pole. Normals should be normal to the ideal sphere surface. """
 function sphere_mesh(n, m)
-    # TODO - feel free to drop in your A1 solution code here
+    positions = []
+    uvs = []
+    normals = []
+    triangles = []
+    
+    lat = pi/m
+    isinLat = sin(-lat)
+    icosLat = cos(-lat)
+    lon = (2*pi)/n
+    isinLon = sin(-lon)
+    icosLon = cos(-lon)
+
+    push!(positions, Vec3(0,-1,0)) #South pole
+    push!(positions, Vec3(0,1,0)) #North pole
+    push!(normals, Vec3(0,-1,0))
+    push!(normals, Vec3(0,1,0))
+    y = -1
+    z = 0
+
+    for i in 1:m
+        x = 0 
+        #Rotate clockwise in the yz-plane to the next latitude ring
+        rot_z = z*icosLat - y*isinLat
+        rot_y = z*isinLat + y*icosLat 
+        start = Vec3(0, rot_y, rot_z)
+        push!(normals, normalize(start))
+        push!(positions, start) #Push starting point of latitude ring at the 180 west longitude line (aka u=0)
+        lowerRing = (i-2)*n
+        upperRing = (i-1)*n
+        for j in 1:n
+            rot_x = x*icosLon - rot_z*isinLon
+            rot_z = x*isinLon + rot_z*icosLon
+            if (j != n)
+                vert = Vec3(rot_x, rot_y, rot_z)
+                push!(positions, vert)
+                push!(normals, normalize(vert))
+                if (i==1) #Ring around south pole
+                    push!(triangles, OBJTriangle([1, j+3, j+2], [], [1, j+3, j+2]))
+                elseif (i != m)
+                    push!(triangles, OBJTriangle([lowerRing+2+j, lowerRing+3+j, upperRing+2+j], [], [lowerRing+2+j, lowerRing+3+j, upperRing+2+j])) 
+                    push!(triangles, OBJTriangle([lowerRing+3+j, upperRing+3+j, upperRing+2+j], [], [lowerRing+3+j, upperRing+3+j, upperRing+2+j])) 
+                else
+                    push!(triangles, OBJTriangle([lowerRing+2+j, lowerRing+3+j, 2], [], [lowerRing+2+j, lowerRing+3+j, 2]))
+                end
+            else
+                #Push all final "wedge" stuff
+                if (i==1)
+                    push!(triangles, OBJTriangle([1, 3, n+2], [], [1, 3, n+2])) 
+                elseif (i != m)
+                    push!(triangles, OBJTriangle([upperRing+2, lowerRing+3, i*n+2], [], [upperRing+2, lowerRing+3, i*n+2]))
+                    push!(triangles, OBJTriangle([i*n+2, lowerRing+3, upperRing+3], [], [i*n+2, lowerRing+3, upperRing+3]))
+                else
+                    push!(triangles, OBJTriangle([upperRing+2, lowerRing+3, 2], [], [upperRing+2, lowerRing+3, 2])) 
+                end
+            end
+            x = rot_x
+        end
+        
+        z = rot_z
+        y = rot_y
+    end
+    return OBJMesh(positions, uvs, normals, triangles)
 end
 
 """
