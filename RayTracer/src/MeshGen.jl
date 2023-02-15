@@ -331,54 +331,67 @@ function sphere_mesh(n, m)
     isinLon = sin(-lon)
     icosLon = cos(-lon)
 
-    push!(positions, Vec3(0,-1,0)) #South pole
-    push!(positions, Vec3(0,1,0)) #North pole
-    push!(normals, Vec3(0,-1,0))
-    push!(normals, Vec3(0,1,0))
-    y = -1
-    z = 0
+    push!(positions, Vec3(0,-1,0)) #South pole vertex
+    push!(positions, Vec3(0,1,0)) #North pole vertex
+    push!(normals, Vec3(0,-1,0)) #South pole normal
+    push!(normals, Vec3(0,1,0)) #North pole normal
 
-    for i in 1:m
-        x = 0 
-        #Rotate clockwise in the yz-plane to the next latitude ring
-        rot_z = z*icosLat - y*isinLat
-        rot_y = z*isinLat + y*icosLat 
-        start = Vec3(0, rot_y, rot_z)
-        push!(normals, normalize(start))
-        push!(positions, start) #Push starting point of latitude ring at the 180 west longitude line (aka u=0)
-        lowerRing = (i-2)*n
-        upperRing = (i-1)*n
-        for j in 1:n
-            rot_x = x*icosLon - rot_z*isinLon
-            rot_z = x*isinLon + rot_z*icosLon
-            if (j != n)
-                vert = Vec3(rot_x, rot_y, rot_z)
-                push!(positions, vert)
-                push!(normals, normalize(vert))
-                if (i==1) #Ring around south pole
-                    push!(triangles, OBJTriangle([1, j+3, j+2], [], [1, j+3, j+2]))
-                elseif (i != m)
-                    push!(triangles, OBJTriangle([lowerRing+2+j, lowerRing+3+j, upperRing+2+j], [], [lowerRing+2+j, lowerRing+3+j, upperRing+2+j])) 
-                    push!(triangles, OBJTriangle([lowerRing+3+j, upperRing+3+j, upperRing+2+j], [], [lowerRing+3+j, upperRing+3+j, upperRing+2+j])) 
-                else
-                    push!(triangles, OBJTriangle([lowerRing+2+j, lowerRing+3+j, 2], [], [lowerRing+2+j, lowerRing+3+j, 2]))
-                end
-            else
-                #Push all final "wedge" stuff
-                if (i==1)
-                    push!(triangles, OBJTriangle([1, 3, n+2], [], [1, 3, n+2])) 
-                elseif (i != m)
-                    push!(triangles, OBJTriangle([upperRing+2, lowerRing+3, i*n+2], [], [upperRing+2, lowerRing+3, i*n+2]))
-                    push!(triangles, OBJTriangle([i*n+2, lowerRing+3, upperRing+3], [], [i*n+2, lowerRing+3, upperRing+3]))
-                else
-                    push!(triangles, OBJTriangle([upperRing+2, lowerRing+3, 2], [], [upperRing+2, lowerRing+3, 2])) 
-                end
-            end
-            x = rot_x
+    y=-1
+    z=0
+    for i in 1:m+1
+        if ((2 <= i) && (i <= m)) #i in [2, m]
+            #Rotate clockwise in the yz-plane to the next latitude ring
+            start_z = z*icosLat - y*isinLat
+            rot_y = z*isinLat + y*icosLat
+            start = Vec3(0, rot_y, start_z) 
+            v = 0.5 + (asin(rot_y)/pi)
+            push!(positions, start) #Push starting point of latitude ring at the 180 west longitude line (aka u=0)
+            push!(normals, start)
+            push!(uvs, Vec2(0.0, v))
+            z = start_z
         end
-        
-        z = rot_z
-        y = rot_y
+        x = 0
+        lowerRing = (i-3)*n
+        upperRing = (i-2)*n
+        for j in 1:n-1
+            if (i == 1) #South pole textures
+                push!(uvs, Vec2(j/n, 0.0))
+            elseif (i == m+1) #North pole textures
+                push!(triangles, OBJTriangle([lowerRing+2+j, lowerRing+3+j, 2], [], [lowerRing+2+j, lowerRing+3+j, 2]))
+                push!(uvs, Vec2(j/n, 1.0))
+            else # i in [2, m]
+                rot_x = x*icosLon - z*isinLon
+                rot_z = x*isinLon + z*icosLon
+                u = 0.5 + (atan(rot_x, rot_z)/(2*pi))
+                vert = Vec3(rot_x, rot_y, rot_z)
+                push!(normals, vert)
+                push!(positions, vert)
+                push!(uvs, Vec2(u, v))
+                if (i == 2)
+                    push!(triangles, OBJTriangle([1, j+3, j+2], [], [1, j+3, j+2])) #j, j+n+1, j+n
+                elseif (i != m+1) # i in [3:m-1]
+                    push!(triangles, OBJTriangle([lowerRing+2+j, lowerRing+3+j, upperRing+2+j], [], [lowerRing+2+j, lowerRing+3+j, upperRing+2+j])) 
+                    push!(triangles, OBJTriangle([lowerRing+3+j, upperRing+3+j, upperRing+2+j], [], [lowerRing+3+j, upperRing+3+j, upperRing+2+j]))        
+                end
+                x = rot_x
+                z = rot_z
+            end 
+            
+        end 
+        #Wrap back around
+        if (i == 2)
+            push!(triangles, OBJTriangle([1, 3, n+2], [], [1, 3, n+2])) #n, 2*n+1, 2*n
+        elseif (i != m+1)
+            push!(triangles, OBJTriangle([upperRing+2, lowerRing+3, (i-1)*n+2], [], [upperRing+2, lowerRing+3, (i-1)*n+2]))
+            push!(triangles, OBJTriangle([(i-1)*n+2, lowerRing+3, upperRing+3], [], [(i-1)*n+2, lowerRing+3, upperRing+3]))
+        else
+            push!(triangles, OBJTriangle([upperRing+2, lowerRing+3, 2], [], [upperRing+2, lowerRing+3, 2])) 
+        end
+        if ((2 <= i) && (i <= m))
+            push!(uvs, Vec2(1.0, v))
+            z = start_z
+            y = rot_y
+        end
     end
     return OBJMesh(positions, uvs, normals, triangles)
 end
