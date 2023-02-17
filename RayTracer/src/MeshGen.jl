@@ -353,11 +353,15 @@ function sphere_mesh(n, m)
         x = 0
         lowerRing = (i-3)*n
         upperRing = (i-2)*n
+        ringInd = (i-1)*n #Final wrap around vertex index, and offset for uvs 
+        final_uv = i*n
+        texInd = ((m-1)*(n+1))
+        npTex = m*(n+1) #North pole uvs
         for j in 1:n-1
             if (i == 1) #South pole textures
                 push!(uvs, Vec2(j/n, 0.0))
             elseif (i == m+1) #North pole textures
-                push!(triangles, OBJTriangle([lowerRing+2+j, lowerRing+3+j, 2], [], [lowerRing+2+j, lowerRing+3+j, 2]))
+                push!(triangles, OBJTriangle([lowerRing+2+j, lowerRing+3+j, 2], [texInd+j-1, texInd+j, npTex+j-1], [lowerRing+2+j, lowerRing+3+j, 2])) 
                 push!(uvs, Vec2(j/n, 1.0))
             else # i in [2, m]
                 rot_x = x*icosLon - z*isinLon
@@ -368,27 +372,30 @@ function sphere_mesh(n, m)
                 push!(positions, vert)
                 push!(uvs, Vec2(u, v))
                 if (i == 2)
-                    push!(triangles, OBJTriangle([1, j+3, j+2], [], [1, j+3, j+2])) #j, j+n+1, j+n
-                elseif (i != m+1) # i in [3:m-1]
-                    push!(triangles, OBJTriangle([lowerRing+2+j, lowerRing+3+j, upperRing+2+j], [], [lowerRing+2+j, lowerRing+3+j, upperRing+2+j])) 
-                    push!(triangles, OBJTriangle([lowerRing+3+j, upperRing+3+j, upperRing+2+j], [], [lowerRing+3+j, upperRing+3+j, upperRing+2+j]))        
+                    push!(triangles, OBJTriangle([1, j+3, j+2], [j, j+n+1, j+n], [1, j+3, j+2]))
+                elseif (i <= m) # i in [3:m]
+                    push!(triangles, OBJTriangle([lowerRing+2+j, lowerRing+3+j, upperRing+2+j], [upperRing+j+i-3, upperRing+j+i-2, ringInd+j+i-2], [lowerRing+2+j, lowerRing+3+j, upperRing+2+j])) 
+                    push!(triangles, OBJTriangle([lowerRing+3+j, upperRing+3+j, upperRing+2+j], [upperRing+j+i-2, ringInd+j+i-1, ringInd+j+i-2], [lowerRing+3+j, upperRing+3+j, upperRing+2+j])) 
                 end
                 x = rot_x
                 z = rot_z
             end 
-            
         end 
-        #Wrap back around
-        if (i == 2)
-            push!(triangles, OBJTriangle([1, 3, n+2], [], [1, 3, n+2])) #n, 2*n+1, 2*n
-        elseif (i != m+1)
-            push!(triangles, OBJTriangle([upperRing+2, lowerRing+3, (i-1)*n+2], [], [upperRing+2, lowerRing+3, (i-1)*n+2]))
-            push!(triangles, OBJTriangle([(i-1)*n+2, lowerRing+3, upperRing+3], [], [(i-1)*n+2, lowerRing+3, upperRing+3]))
-        else
-            push!(triangles, OBJTriangle([upperRing+2, lowerRing+3, 2], [], [upperRing+2, lowerRing+3, 2])) 
+        if (i == 1)
+            push!(uvs, Vec2(1.0, 0.0))
+        elseif (i == m+1)
+            push!(uvs, Vec2(1.0, 1.0))
+            push!(triangles, OBJTriangle([upperRing+2, lowerRing+3, 2], [texInd+n-1, texInd+n, npTex+n-1], [upperRing+2, lowerRing+3, 2]))
         end
+        #Wrap back around
         if ((2 <= i) && (i <= m))
             push!(uvs, Vec2(1.0, v))
+            if (i == 2)
+                push!(triangles, OBJTriangle([1, 3, n+2], [n, 2*n+1, 2*n], [1, 3, n+2]))
+            else
+                push!(triangles, OBJTriangle([upperRing+2, lowerRing+3, ringInd+2], [ringInd+i-3, ringInd+i-2, final_uv+i-2], [upperRing+2, lowerRing+3, ringInd+2])) 
+                push!(triangles, OBJTriangle([lowerRing+3, upperRing+3, ringInd+2], [ringInd+i-2, final_uv+i-1, final_uv+i-2], [lowerRing+3, upperRing+3, ringInd+2])) 
+            end
             z = start_z
             y = rot_y
         end
