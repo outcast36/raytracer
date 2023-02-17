@@ -77,12 +77,35 @@ mutable struct PerspectiveCamera
     canv_width::Int # image width in pixels
 end
 
+""" An orthographic camera where rays all travel parallel to the view ray, but originate from the center of each (sub)pixel."""
+mutable struct OrthographicCamera
+
+    # orthonormal basis specifies position and orientation:
+    eye::Vec3  # position of the eye
+    u_axis::Vec3 # points right in image space
+    v_axis::Vec3 # points up in image space
+    w_axis::Vec3 # opposite the view direction
+
+    # image dimensions:
+    canv_height::Int # image height in pixels
+    canv_width::Int # image width in pixels
+end
+
+""" Constructors for cameras """
 function PerspectiveCamera(eye::Vec3, view::Vec3, up::Vec3, focal::Real, aperture_n::Real, canv_height::Int, canv_width::Int)
     w_axis = normalize(-view)
     u_axis = normalize(cross(up, w_axis))
     v_axis = normalize(cross(w_axis, u_axis))
     return PerspectiveCamera(eye, u_axis, v_axis, w_axis, focal, aperture_n, canv_height, canv_width)
 end
+
+function OrthographicCamera(eye::Vec3, view::Vec3, up::Vec3, canv_height::Int, canv_width::Int)
+    w_axis = normalize(-view)
+    u_axis = normalize(cross(up, w_axis))
+    v_axis = normalize(cross(w_axis, u_axis))
+    return OrthographicCamera(eye, u_axis, v_axis, w_axis, canv_height, canv_width)
+end
+
 
 function pixel_to_ray(camera::PerspectiveCamera, subPixel::Vec2, i, j)
     # viewport height = 1
@@ -106,5 +129,23 @@ function pixel_to_ray(camera::PerspectiveCamera, subPixel::Vec2, i, j)
     #ray_dir = u*camera.u_axis + v*camera.v_axis - camera.focalLength*camera.w_axis
     return Ray(ray_origin, ray_dir)
 end
+
+function pixel_to_ray(camera::OrthographicCamera, subPixel::Vec2, i, j)
+    # viewport height = 1
+    vp_height = camera.canv_height / camera.canv_width
+
+    # convert from i,j 2D array indices to (u, v) coordinates
+    # with (0,0) in the center of the image
+    # half pixel shift, scale down to size 1, shift origin to center
+    u = ((j - subPixel[2]/N_SUBPIXELS) / (camera.canv_width) - 0.5)
+
+    # same as u, except i increases downward so flip with a negative sign
+    # and multiply by vp_height to account for aspect ratio
+    v = -((i - subPixel[1]/N_SUBPIXELS) / (camera.canv_height) - 0.5) * vp_height
+
+    ray_origin = normalize(camera.eye + lensPoint[1]*camera.u_axis + lensPoint[2]*camera.v_axis) #camera.eye + offset
+    return Ray(ray_origin, -camera.w_axis)
+end
+
 
 end # module Cameras
