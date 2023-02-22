@@ -1,20 +1,12 @@
 module Scenes
 
 export HitRecord, Sphere, Scene, TriangleMesh, ray_intersect, create_triangles
-#export has_uvs, has_normals, get_vertex, get_uv, get_normal
-
 using LinearAlgebra
 
-#push!(LOAD_PATH, pwd())
 using ..GfxBase
 using ..MeshGen
 using ..Materials
 
-
-
-#####################################
-###### Generic Scene Data Type ######
-#####################################
 struct Scene
     background::RGB{Float32}
     objects::Array{Any,1}
@@ -31,17 +23,10 @@ mutable struct HitRecord
     object
 end
 
-# Abstract ray-object intersection function:
-# Needs to be implemented for each type of object to be rendered
 """ Intersect a ray with an object.
 Returns a HitRecord with info about the intersetion, or nothing if
 the ray doesn't intersect with the object. """
 function ray_intersect(ray::Ray, object) end
-
-
-##################
-##### Sphere #####
-##################
 
 # Data type:
 struct Sphere
@@ -78,11 +63,6 @@ function ray_intersect(ray::Ray, object::Sphere)
         return HitRecord(t_0, intersection_pt, surface_normal, uv, object)
     end
 end
-
-
-###########################
-###### Triangle Mesh ######
-###########################
 
 """ Data type: stores the OBJTriangle, a reference to its Mesh
 object, and the material it should be rendered with. """
