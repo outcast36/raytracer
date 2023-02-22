@@ -44,18 +44,28 @@ end
 function camera_4(img_height, img_width)
 
     Cameras.PerspectiveCamera(
-                 Vec3(0, 0.0, 0.0),  # eye::Vec3
-                 Vec3(0.0, 0.0, -1.0), # view::Vec3
-                 Vec3(0, 1, 0),   # up::Vec3
-                 4.0,     # focal::Real
-                 4.0,     #aperture number n
-                 img_height, # canv_height::Int
-                 img_width) # canv_width::Int)
+        Vec3(0, 0.0, 0.0),  # eye::Vec3
+        Vec3(0.0, 0.0, -1.0), # view::Vec3
+        Vec3(0, 1, 0),   # up::Vec3
+        4.0,     # focal::Real
+        4.0,     #aperture number n
+        img_height, # canv_height::Int
+        img_width) # canv_width::Int)
+end
+
+function camera_5(img_height, img_width)
+
+    Cameras.OrthographicCamera(
+        Vec3(0, 0.0, 0.0),  # eye::Vec3
+        Vec3(0.0, 0.0, -1.0), # view::Vec3
+        Vec3(0, 1, 0),   # up::Vec3
+        img_height,
+        img_width)
 end
 
 
 
-cameras = [camera_1, camera_2, camera_3, camera_4]
+cameras = [camera_1, camera_2, camera_3, camera_4, camera_5]
 
 function get_camera(i, img_height, img_width)
     cameras[i](img_height, img_width)
