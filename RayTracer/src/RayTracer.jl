@@ -220,7 +220,7 @@ function areaLightOcclusion(scene, light::AreaLight, intersection::Vec3, xPrime:
 end
 
 """ Sample a point on a spherical area light and perform shading calculations as if it were a point light source """
-function shadeAreaLight(material, scene, light::AreaLight, ray::Ray, intersection::Vec3, normal::Vec3, sampleCount)
+function shadeAreaLight(material, scene, light::AreaLight, ray::Ray, intersection::Vec3, normal::Vec3)
     light_val = BLACK
     xp = sampleAreaLight(light, intersection)
     lightVec = normalize(xp - intersection)
@@ -255,7 +255,7 @@ function shade_diffuse(material::Material, ray::Ray, normal::Vec3, point::Vec3, 
     color = BLACK 
     for i in 1:length(scene.lights) #for each light in the scene:
         cur_light = scene.lights[i]
-        light_val = integrateAreaLight(material, scene, cur_light, ray, point, normal, 25)
+        light_val = shadeAreaLight(material, scene, cur_light, ray, point, normal)
         color += light_val #add the light's contribution into the color
     end
     return color
