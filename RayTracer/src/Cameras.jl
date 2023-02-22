@@ -106,7 +106,6 @@ function OrthographicCamera(eye::Vec3, view::Vec3, up::Vec3, canv_height::Int, c
     return OrthographicCamera(eye, u_axis, v_axis, w_axis, canv_height, canv_width)
 end
 
-
 function pixel_to_ray(camera::PerspectiveCamera, subPixel::Vec2, i, j)
     # viewport height = 1
     vp_height = camera.canv_height / camera.canv_width
@@ -143,7 +142,7 @@ function pixel_to_ray(camera::OrthographicCamera, subPixel::Vec2, i, j)
     # and multiply by vp_height to account for aspect ratio
     v = -((i - subPixel[1]/N_SUBPIXELS) / (camera.canv_height) - 0.5) * vp_height
 
-    ray_origin = normalize(camera.eye + lensPoint[1]*camera.u_axis + lensPoint[2]*camera.v_axis) #camera.eye + offset
+    ray_origin = camera.eye + u*camera.u_axis + v*camera.v_axis #camera.eye + offset
     return Ray(ray_origin, -camera.w_axis)
 end
 
