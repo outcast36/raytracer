@@ -7,6 +7,7 @@ using ..GfxBase
 using ..MeshGen
 using ..Materials
 
+""" Scene datatype to store hittable objects, and light sources """
 struct Scene
     background::RGB{Float32}
     objects::Array{Any,1}
@@ -23,45 +24,10 @@ mutable struct HitRecord
     object
 end
 
-""" Intersect a ray with an object.
-Returns a HitRecord with info about the intersetion, or nothing if
-the ray doesn't intersect with the object. """
-function ray_intersect(ray::Ray, object) end
-
-# Data type:
 struct Sphere
     center::Vec3
     radius::Float64
     material::Material
-end
-
-""" Ray-sphere intersection. """
-function ray_intersect(ray::Ray, object::Sphere)
-    squared_radius = object.radius * object.radius
-    a = norm(ray.direction)*norm(ray.direction)
-    half_b = dot(ray.direction, (ray.origin - object.center))
-    c = -squared_radius + norm(ray.origin - object.center)*norm(ray.origin - object.center)
-    discriminant = (half_b*half_b) - c*a
-    inverse_radius = 1/object.radius
-    if discriminant < 0
-        return nothing
-    else
-        t_0 = (-half_b - sqrt(discriminant))/a
-        if t_0 > 0
-            intersection_pt = ray.origin + t_0 * ray.direction
-        else
-            t_1 = (-half_b + sqrt(discriminant))/a
-            intersection_pt = ray.origin + t_1 * ray.direction
-        end
-        surface_normal = inverse_radius * Vec3(intersection_pt-object.center)
-
-        #Textures
-        d = normalize(intersection_pt- object.center) #D is vector from intersection point to sphere center
-        u = 0.5 + (atan(d[1], d[3])/(2*pi))
-        v = 0.5 + (-asin(d[2])/pi)
-        uv = Vec2(v,u)
-        return HitRecord(t_0, intersection_pt, surface_normal, uv, object)
-    end
 end
 
 """ Data type: stores the OBJTriangle, a reference to its Mesh
@@ -99,22 +65,64 @@ function get_normal(tri::Triangle, i)
     tri.mesh.normals[tri.geometry.normals[i]]
 end
 
+""" Intersect a ray with an object.
+Returns a HitRecord with info about the intersetion, or nothing if
+the ray doesn't intersect with the object. """
+function ray_intersect(ray::Ray, object) end
 
+""" Ray-sphere intersection. """
+function ray_intersect(ray::Ray, object::Sphere)
+    squared_radius = object.radius * object.radius
+    a = norm(ray.direction)*norm(ray.direction)
+    half_b = dot(ray.direction, (ray.origin - object.center))
+    c = -squared_radius + norm(ray.origin - object.center)*norm(ray.origin - object.center)
+    discriminant = (half_b*half_b) - c*a
+    inverse_radius = 1/object.radius
+    if discriminant < 0
+        return nothing
+    else
+        t_0 = (-half_b - sqrt(discriminant))/a
+        if t_0 > 0
+            intersection_pt = ray.origin + t_0 * ray.direction
+        else
+            t_1 = (-half_b + sqrt(discriminant))/a
+            intersection_pt = ray.origin + t_1 * ray.direction
+        end
+        surface_normal = inverse_radius * Vec3(intersection_pt-object.center)
+
+        ##Textures
+        #d = normalize(intersection_pt- object.center) #D is vector from intersection point to sphere center
+        #u = 0.5 + (atan(d[1], d[3])/(2*pi))
+        #v = 0.5 + (-asin(d[2])/pi)
+        #uv = Vec2(v,u)
+        return HitRecord(t_0, intersection_pt, surface_normal, nothing, object)
+    end
+end
+
+""" Ray-triangle intersection via barycentric coordinates """
 function ray_intersect(ray::Ray, object::Triangle)
     #Get vertices
     a = get_vertex(object,1)
     b = get_vertex(object,2)
     c = get_vertex(object,3)
 
-    vec_b = a - ray.origin
-    #vec_b = reshape(vec_b, length(vec_b), 1) #Set up the right-hand side 3-vector: b = a-p
-    A = hcat((a-c), (a-b), ray.direction) #Set up the matrix A with columns a - b, a - c, and d -- something to do with the ordering of vertices?
-    x = inv(A) * vec_b #Why does this work but not the line below
-    #x = A / vec_b #Solve the system Ax = b
-    #x vector: [beta, gamma, t]^T
-    beta = x[1]
-    gamma = x[2]
-    t = x[3]
+    col_u = a-b
+    col_v = a-c
+    col_b = a - ray.origin
+    #Solve linear system Ax = b via Cramer's rule. Where A is a 3x3 matrix with columns (a-b), (a-c), and d. 
+    #x is a column vector: [beta, gamma, t]^T, and b is the column vector (a-p)
+    ei_minus_hf = (col_v[2]*ray.direction[3]) - (ray.direction[2]*col_v[3])
+    gf_minus_di = (ray.direction[1]*col_v[3]) - (col_v[1]*ray.direction[3])
+    dh_minus_eg = (col_v[1]*ray.direction[2]) - (col_v[2]*ray.direction[1])
+
+    ak_minus_jb = (col_u[1]*col_b[2]) - (col_b[1]*col_u[2])
+    jc_minus_al = (col_b[1]*col_u[3]) - (col_u[1]*col_b[3])
+    bl_minus_kc = (col_u[2]*col_b[3]) - (col_b[2]*col_u[3])
+
+    M = (col_u[1]*ei_minus_hf) + (col_u[2]*gf_minus_di) + (col_u[3]*dh_minus_eg) #Determinant of matrix A 
+    beta = ((col_b[1]*ei_minus_hf)+(col_b[2]*gf_minus_di)+(col_b[3]*dh_minus_eg))/M
+    gamma = ((ray.direction[3]*ak_minus_jb)+(ray.direction[2]*jc_minus_al)+(ray.direction[1]*bl_minus_kc))/M
+    t = -((col_v[3]*ak_minus_jb)+(col_v[2]*jc_minus_al)+(col_v[1]*bl_minus_kc))/M
 
     point_in_triangle = (beta > 0 && gamma > 0) && (beta + gamma < 1)
     if !point_in_triangle || t <= 0 
@@ -127,15 +135,7 @@ function ray_intersect(ray::Ray, object::Triangle)
        normal = normalize(cross((b-a), (c-a)))
     end
     intersection = ray.origin + t * ray.direction
-
-    #Textures
-    if has_uvs(object)
-        uv =  alpha* get_uv(object,1) + beta * get_uv(object,3) + gamma * get_uv(object,2)
-        uv = Vec2(1-uv[2],uv[1])
-    else
-        uv = nothing
-    end
-    return HitRecord(t, intersection, normal, uv, object)
+    return HitRecord(t, intersection, normal, nothing, object)
 end
 
 end # module Scenes
