@@ -18,6 +18,18 @@ LEMON = RGB{Float32}(1.0, 1.0, 0.3)
 PINK = RGB{Float32}(0.7, 0.3, 0.3)
 LIME = RGB{Float32}(0.33, 0.97, 0.26)
 
+""" Take the OBJMesh mesh and return an array of Triangles from the mesh
+with the given material, after scaling the mesh positions by scale and moving
+them by translation """
+function mesh_helper(mesh, material, scale=1.0, translation=Vec3(0,0,0))
+
+    for i in 1:length(mesh.positions)
+        mesh.positions[i] = mesh.positions[i] * scale + translation
+    end
+
+    create_triangles(mesh, material)
+end
+
 function camera_1(img_height, img_width)
     CanonicalCamera(img_height, img_width)
 end
@@ -26,19 +38,21 @@ function camera_2(img_height, img_width)
     eye = Vec3(20, 4, 10)
     view = Vec3(-1, 0, -5) - eye
     up = Vec3(0, 1, 0)
-    focal = 8.0
-    Cameras.PerspectiveCamera(eye, view, up, focal, img_height, img_width)
+    focal = 13.0
+    apt = 16.0
+    Cameras.PerspectiveCamera(eye, view, up, focal, apt, img_height, img_width)
 end
 
 function camera_3(img_height, img_width)
 
     Cameras.PerspectiveCamera(
-                 Vec3(-1, 0.8, -1.2),  # eye::Vec3
-                 Vec3(1, -1, -1), # view::Vec3
-                 Vec3(0, 1, 0),   # up::Vec3
-                 0.3,     # focal::Real
-                 img_height, # canv_height::Int
-                 img_width) # canv_width::Int)
+        Vec3(-1, 0.8, -1.2),  # eye::Vec3
+        Vec3(1, -1, -1), # view::Vec3
+        Vec3(0, 1, 0),   # up::Vec3
+        0.3, # focal::Real
+        4.0,     
+        img_height, # canv_height::Int
+        img_width) # canv_width::Int)
 end
 
 function camera_4(img_height, img_width)
@@ -62,7 +76,6 @@ function camera_5(img_height, img_width)
         img_height,
         img_width)
 end
-
 
 
 cameras = [camera_1, camera_2, camera_3, camera_4, camera_5]
@@ -208,19 +221,28 @@ function scene_6()
     Scene(bg, objs, lights)
 end
 
-""" Take the OBJMesh mesh and return an array of Triangles from the mesh
-with the given material, after scaling the mesh positions by scale and moving
-them by translation """
-function mesh_helper(mesh, material, scale=1.0, translation=Vec3(0,0,0))
+function scene_7()
+    bg = BLACK
+    lightColor = RGB{Float32}(0.6, 0.6, 0.6)
+    objs = []
 
-    for i in 1:length(mesh.positions)
-        mesh.positions[i] = mesh.positions[i] * scale + translation
-    end
+    # add a bunny:
+    bunnyColor = RGB{Float32}(0.6, 0.5, 0.5)
+    bunny_mat = Lambertian(bunnyColor, bunnyColor, 10)
+    bunny = read_obj("meshes/bunny2.obj")
+    append!(objs, mesh_helper(bunny, bunny_mat, 1.0, Vec3(0.2, 0, -5)))
 
-    create_triangles(mesh, material)
+    # add a cube
+    cube_mat = Metallic(WHITE, WHITE, 10)
+    append!(objs, mesh_helper(cube_mesh(), cube_mat, 10.0, Vec3(-11.2, 0, 0)))
+
+    lights = [AreaLight(lightColor, Vec3(1.5, 1.5, 0.0), 2.0)] #
+
+    Scene(bg, objs, lights)
+
 end
 
 
-scenes = [scene_1, scene_2, scene_3, scene_4, scene_5, scene_6]
+scenes = [scene_1, scene_2, scene_3, scene_4, scene_5, scene_6, scene_7]
 
 end # module TestScenes
