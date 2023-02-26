@@ -108,7 +108,7 @@ function shade_light(material, ray::Ray, normal::Vec3, intersection::Vec3, light
     light_vector = light_direction(light, intersection)
     distFromLight = norm(intersection - light.position)
     n_dot_l = dot(normal, light_vector)
-    irradiance = light.intensity * (1/(distFromLight^2)) * max(0, n_dot_l) #RGB color
+    irradiance = light.intensity * (1/(distFromLight^2)) * max(0, n_dot_l) #RGB color 
 
     #!! -- RGB color * RGB color -- !!#
     diffuse_light = colorMultiply(material.albedo, irradiance)
