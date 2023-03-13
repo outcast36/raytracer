@@ -28,7 +28,7 @@ struct Sphere
     center::Vec3
     radius::Float64
     emission::RGB{Float32} #If surface is a light emitting surface (a luminaire) this will be nonzero
-    material::Union{Material, Nothing}
+    material
 end
 
 """ Data type: stores the OBJTriangle, a reference to its Mesh
