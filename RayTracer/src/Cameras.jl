@@ -14,11 +14,6 @@ using ..GfxBase
 
 export CanonicalCamera
 export pixel_to_ray, convertSubpixel
-export SAMPLES_PER_PIXEL
-
-#Divide pixel into n*n grid of subpixels
-SAMPLES_PER_PIXEL = 256
-N_SUBPIXELS = isqrt(SAMPLES_PER_PIXEL)
 
 """ The most basic perspective camera. The eye is at (0, 0, 0),
 the up vector is (0, 1, 0), and the view direction is (0, 0, -1).
@@ -30,27 +25,27 @@ mutable struct CanonicalCamera
 end
 
 """ Convert a 1d subpixel index into a 2d subpixel index """
-function convertSubpixel(subpix)
-    sub_i = subpix%N_SUBPIXELS == 0 ? div(subpix,N_SUBPIXELS) : div(subpix,N_SUBPIXELS)+1
-    sub_j = subpix%N_SUBPIXELS == 0 ? N_SUBPIXELS : subpix%N_SUBPIXELS 
-    return Vec2(N_SUBPIXELS-sub_i, N_SUBPIXELS-sub_j)
+function convertSubpixel(subpix, n_sub)
+    sub_i = subpix%n_sub == 0 ? div(subpix,n_sub) : div(subpix,n_sub)+1
+    sub_j = subpix%n_sub == 0 ? n_sub : subpix%n_sub 
+    return Vec2(n_sub-sub_i, n_sub-sub_j)
 end
 
 """ Given a camera and pixel coordinates 1-indexed, i=row,j=column],
 return the ray along which to search for objects that project to
 that pixel. """
-function pixel_to_ray(camera::CanonicalCamera, subPixel::Vec2, i, j)
+function pixel_to_ray(camera::CanonicalCamera, subPixel::Vec2, n_sub, i, j)
     # viewport height = 1
     vp_height = camera.canv_height / camera.canv_width
 
     # convert from i,j 2D array indices to (u, v) coordinates
     # with (0,0) in the center of the image
     # half pixel shift, scale down to size 1, shift origin to center
-    u =  ((j - subPixel[2]/N_SUBPIXELS) / (camera.canv_width) - 0.5)
+    u =  ((j - subPixel[2]/n_sub) / (camera.canv_width) - 0.5)
 
     # same as u, except i increases downward so flip with a negative sign
     # and multiply by vp_height to account for aspect ratio
-    v = -((i - subPixel[1]/N_SUBPIXELS) / (camera.canv_height) - 0.5) * vp_height
+    v = -((i - subPixel[1]/n_sub) / (camera.canv_height) - 0.5) * vp_height
 
     # focal length is 1, pointing down the -z axis
     w = -1.0
@@ -106,27 +101,28 @@ function OrthographicCamera(eye::Vec3, view::Vec3, up::Vec3, canv_height::Int, c
     return OrthographicCamera(eye, u_axis, v_axis, w_axis, canv_height, canv_width)
 end
 
-function pixel_to_ray(camera::PerspectiveCamera, subPixel::Vec2, i, j)
+function pixel_to_ray(camera::PerspectiveCamera, subPixel::Vec2, n_sub, i, j)
+    
     # viewport height = 1
     vp_height = camera.canv_height / camera.canv_width
 
     # convert from i,j 2D array indices to (u, v) coordinates
     # with (0,0) in the center of the image
     # half pixel shift, scale down to size 1, shift origin to center
-    u = ((j - subPixel[2]/N_SUBPIXELS) / (camera.canv_width) - 0.5)
+    u = ((j - subPixel[2]/n_sub) / (camera.canv_width) - 0.5)
 
     # same as u, except i increases downward so flip with a negative sign
     # and multiply by vp_height to account for aspect ratio
-    v = -((i - subPixel[1]/N_SUBPIXELS) / (camera.canv_height) - 0.5) * vp_height
+    v = -((i - subPixel[1]/n_sub) / (camera.canv_height) - 0.5) * vp_height
 
-    lensPoint = camera.focalLength/(2*camera.aperture_n) * randomUnitDisk() #lens diameter is F/n where F is focal length of the lens and n is the aperture number (Cook 1984).
-    px = u*(camera.focalLength)
-    py = v*(camera.focalLength) #/d?
-    ray_dir = (px - lensPoint[1])*camera.u_axis + (py - lensPoint[2])*camera.v_axis - camera.focalLength*camera.w_axis
-    ray_dir = normalize(ray_dir)
-    ray_origin = camera.eye + lensPoint[1]*camera.u_axis + lensPoint[2]*camera.v_axis #camera.eye + offset
-    #ray_dir = u*camera.u_axis + v*camera.v_axis - camera.focalLength*camera.w_axis
-    return Ray(ray_origin, ray_dir)
+    #lensPoint = camera.focalLength/(2*camera.aperture_n) * randomUnitDisk() #lens diameter is F/n where F is focal length of the lens and n is the aperture number (Cook 1984).
+    #px = u*(camera.focalLength)
+    #py = v*(camera.focalLength) #/d?
+    #ray_dir = (px - lensPoint[1])*camera.u_axis + (py - lensPoint[2])*camera.v_axis - camera.focalLength*camera.w_axis
+
+    ray_origin = camera.eye #+ lensPoint[1]*camera.u_axis + lensPoint[2]*camera.v_axis #camera.eye + offset
+    ray_dir = u*camera.u_axis + v*camera.v_axis - camera.focalLength*camera.w_axis
+    return Ray(ray_origin, ray_dir)    
 end
 
 function pixel_to_ray(camera::OrthographicCamera, subPixel::Vec2, i, j)
