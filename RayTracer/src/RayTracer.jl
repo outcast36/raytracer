@@ -31,6 +31,7 @@ import .Scenes.Scene
 import .Scenes.HitRecord
 import .Cameras
 import .TestScenes
+import Random.rand
 
 # -- Color constants -- #
 BLACK = RGB{Float32}(0.0, 0.0, 0.0)
@@ -44,7 +45,7 @@ function closest_intersect(objects::Array{Any, 1}, ray::Ray, tmin, tmax)
     closest_hit = nothing
     for i in 1:length(objects)
         cur = Scenes.ray_intersect(ray, objects[i])
-        if cur !== nothing && cur.t < closest_t && cur.t > tmin
+        if ((cur !== nothing) && (cur.t < closest_t) && (cur.t > tmin))
             closest_t = cur.t
             closest_hit = cur
         end
@@ -61,27 +62,32 @@ function gamma_correct(color)
     return RGB{Float32}(r,g,b)
 end
 
-""" Trace a ray from orig along ray through scene, using Whitted recursive raytracing 
-limited to rec_depth recursive calls. """
-function traceray(scene::Scene, ray::Ray, tmin, tmax, rec_depth)
-    closest_hitrec = closest_intersect(scene.objects, ray, tmin, tmax)
-
-    if closest_hitrec === nothing
-        unit_dir = normalize(ray.direction)
-        t = 0.5*(unit_dir[2] + 1.0)
-        return (1.0-t)*WHITE + t*scene.background
+""" Core of Monte Carlo Path Tracing -- Integrate rendering equation via MC methods """
+function traceray(scene::Scene, ray::Ray, tmin, tmax, depth)
+    probTerm = 0.55
+    #Trace ray to find point of intersection with the nearest surface
+    closestHit = closest_intersect(scene.objects, ray, tmin, tmax)
+    if (closestHit === nothing)
+        return scene.background
     end
-    
-    normal = closest_hitrec.normal
-    object = closest_hitrec.object
-    point = closest_hitrec.intersection
+    normal = closestHit.normal
+    object = closestHit.object
+    point = closestHit.intersection
     material = object.material
     
-    if rec_depth <= 0
-        return BLACK
+    roulette = rand()
+    color = object.emission #* max(0, dot(normal, -ray.direction))
+    termCond = ((roulette <= probTerm) && (depth >=4))
+    if (termCond)
+        return color
     end
-    color = getColor(scene, material, ray, normal, point, tmax, rec_depth)
-    return gamma_correct(color)
+    brdfVals = sample(material, -ray.direction, normal)
+    brdfFactor = brdfVals.mult
+    omega = brdfVals.omega
+    recurRay = Ray(point, omega)
+    recurColor = traceray(scene, recurRay, tmin, tmax, depth+1)
+    color += colorMultiply(brdfFactor, recurColor) * (1/probTerm) #fr * cos(omega) * 1/P(omega) 
+    return color 
 end
 
 """ Compute reflection ray direction for reflective surfaces """
@@ -109,23 +115,6 @@ function transmitRay(incident::Vec3, normal::Vec3, index::Float64)
         return reflectRay(incident, ref_n)
     end
     return (eta * incident) + ((eta * i_dot_n) - sqrt(discriminant)) * normal
-end
-
-function getColor(scene::Scene, material::Lambertian, ray::Ray, normal, point, tmax, rec_depth)
-    return shade_diffuse(material, ray, normal, point, scene)
-end
-
-function getColor(scene::Scene, material::Metallic, ray::Ray, normal, point, tmax, rec_depth)
-    # -- Mirror Reflection -- #
-    diffuse_color = shade_diffuse(material, ray, normal, point, scene)
-    reflectDirection = reflectRay(-ray.direction, normal)
-    if (dot(reflectDirection, normal) < 0)
-        return BLACK
-    end
-    reflectionRay = Ray(point, reflectDirection)
-    color = traceray(scene, reflectionRay, 1e-8, tmax, rec_depth - 1)
-    color = colorMultiply(diffuse_color, color)  
-    return color 
 end
 
 function getColor(scene::Scene, material::Glossy, ray::Ray, normal, point, tmax, rec_depth)
@@ -186,83 +175,8 @@ function glossyReflect(r::Vec3, n::Vec3)
     return wi 
 end
 
-""" Determine the color of interesction point described by hitrec 
-Flat shading - just color the pixel the material's diffuse color """
-function flat_color(material::Material, hitrec::HitRecord)
-    get_diffuse(material, hitrec.uv)
-end
-
-""" Normal shading - color-code pixels according to their normals """
-function normal_color(normal::Vec3)
-    normal_color = normalize(hitrec.normal) / 2 .+ 0.5
-    RGB{Float32}(normal_color...)
-end
-
-""" Determine if a point is in shadow with a point light """
-function is_shadowed(scene, light::PointLight, point::Vec3)
-    light_vector = light_direction(light, point)
-    shadow_ray = Ray(point, light_vector) #p + tL
-    return closest_intersect(scene.objects, shadow_ray, 1e-8, 1) !== nothing
-end
-
-""" Determine if a point is in shadow with a directional light """
-function is_shadowed(scene, light::DirectionalLight, point::Vec3)
-    light_vector = light_direction(light, point)
-    shadow_ray = Ray(point, light_vector) #p + tL
-    return closest_intersect(scene.objects, shadow_ray, 1e-8, Inf32) !== nothing
-end
-
-""" Randomly sample points on spherical light source to determine if points are in shadow/penumbra """
-function areaLightOcclusion(scene, light::AreaLight, intersection::Vec3, xPrime::Vec3)
-    light_vector = normalize(xPrime - intersection)
-    shadow_ray = Ray(intersection, light_vector) #p + tL
-    return closest_intersect(scene.objects, shadow_ray, 1e-8, 1) !== nothing
-end
-
-""" Sample a point on a spherical area light and perform shading calculations as if it were a point light source """
-function shadeAreaLight(material, scene, light::AreaLight, ray::Ray, intersection::Vec3, normal::Vec3)
-    light_val = BLACK
-    xp = sampleAreaLight(light, intersection)
-    lightVec = normalize(xp - intersection)
-    lightNormal = (1/light.radius) * (xp - light.center)
-    cosTheta = dot(lightVec, normal) #Theta is angle between psi' and surface normal at intersection point
-    cosThetaPrime = dot(-lightVec, lightNormal) #Theta' is angle between psi' and surface normal at point x'
-    distSquared = dot(xp-intersection, xp-intersection)
-    pdf_xp = areaLightPDF(light, intersection)
-    brdf_val = areaLightBRDF(material, light, ray, normal, intersection, xp)
-    if (!areaLightOcclusion(scene, light, intersection, xp)) #g(x, x') == 1 aka point x is not shadowed wrt x'
-        light_val = (brdf_val*cosTheta)*(1/pdf_xp)*(distSquared/cosThetaPrime) #In theory final factor is cancelled out? 
-        return light_val
-    end
-    return light_val
-end
-
-#""" Determine the diffuse color of a physical surface """
-#function shade_diffuse(material::Material, ray::Ray, normal::Vec3, point::Vec3, scene::Scene)
-#    color = BLACK 
-#    for i in 1:length(scene.lights) #for each light in the scene:
-#        cur_light = scene.lights[i]
-#        if !is_shadowed(scene, cur_light, point)
-#            light_val = shade_light(material, ray, normal, point, cur_light) #determine the light's contribution
-#            color += light_val #add the light's contribution into the color
-#        end
-#    end
-#    return color
-#end
-
-""" Determine the diffuse color of a physical surface """
-function shade_diffuse(material::Material, ray::Ray, normal::Vec3, point::Vec3, scene::Scene)
-    color = BLACK 
-    for i in 1:length(scene.lights) #for each light in the scene:
-        cur_light = scene.lights[i]
-        light_val = shadeAreaLight(material, scene, cur_light, ray, point, normal)
-        color += light_val #add the light's contribution into the color
-    end
-    return color
-end
-
 # Main loop:
-function main(scene, camera, height, width, outfile)
+function main(scene, camera, height, width, N, outfile)
 
     # get the requested scene and camera
     scene = TestScenes.get_scene(scene)
@@ -270,22 +184,23 @@ function main(scene, camera, height, width, outfile)
 
     # Create a blank canvas to store the image:
     canvas = zeros(RGB{Float32}, height, width)
-
+    N_SUBPIXELS = isqrt(N)
     for i in 1:height #for each pixel
         for j in 1:width
             pixel_color = BLACK
-            for s in 1:Cameras.SAMPLES_PER_PIXEL #Shoot n rays to each pixel
-                subpix = Cameras.convertSubpixel(s)
-                view_ray = Cameras.pixel_to_ray(camera, subpix, i, j) #generate viewing ray
-                pixel_color += traceray(scene, view_ray, 1, Inf32, 8) #trace the viewing ray to determine pixel color
+            for s in 1:N
+                subpix = Cameras.convertSubpixel(s, N_SUBPIXELS)
+                #Choose a ray given (x,y): world coordinates of the current (sub)pixel, (u,v): ray origin on camera lens and direction through focal point, and t: time (for motion blur)
+                view_ray = Cameras.pixel_to_ray(camera, subpix, N_SUBPIXELS, i, j)
+                pixel_color += traceray(scene, view_ray, 1e-8, Inf32, 0)
             end
-            pixel_color *= (1/Cameras.SAMPLES_PER_PIXEL) #Average the pixel color across each sample
-            canvas[i,j] = pixel_color #set the color of the pixel based on the traced ray
+            pixel_color *= (1/N)
+            canvas[i,j] = gamma_correct(pixel_color) #set the color of the pixel based on the traced ray
         end
     end
 
     # clamp canvas to valid range:
-    clamp01!(canvas)
+    clamp01nan!(canvas)
     save(outfile, canvas)
 end
 
