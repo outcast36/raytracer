@@ -1,6 +1,6 @@
 module GfxBase
 
-export Vec3, Vec2, Ray, randomUnitSphere, randomHemiSphere, randomCosineHemi, colorMultiply, uniformSampleSphere, randomUnitDisk
+export Vec3, Vec2, Ray, randomUnitSphere, randomHemiSphere, uniformHemiSphere, colorMultiply, uniformSampleSphere, randomUnitDisk
 
 using Images
 using StaticArrays
@@ -44,16 +44,16 @@ function randomHemiSphere(normal::Vec3)
     end
 end
 
-""" Sample a point on the hemisphere with cosine density """
-function randomCosineHemi(exp)
+""" Uniformly sample a point on the hemisphere """
+function uniformHemiSphere()
     sample = Vec2(rand(), rand())
-    cos_phi = cos(2*pi*sample[1])
-    sin_phi = sin(2*pi*sample[1])
-    cos_theta = (1-sample[2])^(1/(1+exp))
-    sin_theta = sqrt(1 - (cos_theta*cos_theta))
-    sx = sin_theta*cos_phi
-    sy = sin_theta*sin_phi
-    sz = cos_theta
+    cosTheta = sample[1]
+    sinTheta = sqrt(1-(cosTheta*cosTheta))
+    cosPhi = cos(2*pi*sample[2])
+    sinPhi = sin(2*pi*sample[2])
+    sx = cosPhi*sinTheta
+    sy = sinPhi*sinTheta
+    sz = cosTheta
     return Vec3(sx, sy, sz)
 end
 
