@@ -45,6 +45,9 @@ function randomHemiSphere(normal::Vec3)
 end
 
 """ Uniformly sample a point on the hemisphere """
+#References: 
+#  https://alexanderameye.github.io/notes/sampling-the-hemisphere/
+#  https://www.cg.tuwien.ac.at/sites/default/files/course/4411/attachments/04_path_tracing_0.pdf  -- slide 21/115
 function uniformHemiSphere()
     sample = Vec2(rand(), rand())
     cosTheta = sample[1]
