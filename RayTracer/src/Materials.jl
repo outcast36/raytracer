@@ -2,12 +2,18 @@ module Materials
 
 using Images
 using FileIO
+using LinearAlgebra
 
 using ..GfxBase
-using ..Lights
 
 export Material
 export Lambertian, Metallic, Dielectric, Glossy
+export sample, brdfSample
+
+mutable struct brdfSample
+    omega::Vec3
+    mult
+end
 
 abstract type Material end
 
@@ -35,5 +41,36 @@ mutable struct Glossy <: Material
 end
 
 #TODO: Make translucent material to keep ideal dielectric sepearate from glossy transparency?
+
+""" BRDF attenuation factor """
+function eval(material::Lambertian, view::Vec3, omega::Vec3)
+    return material.albedo * (1/pi)
+end
+
+function pdf(material::Lambertian, omega::Vec3)
+    return 1/(2*pi) #surface area of hemisphere and all omega are equally likely
+end
+
+""" Sample the upper hemisphere around the surface normal. Assumes
+    that view and normal are normalized """
+function sample(material::Lambertian, view::Vec3, normal::Vec3)
+    localOmega = uniformHemiSphere()
+
+    #Construct basis to bring omega into world space (the hemisphere aligned with the normal)
+    w = normal
+    #Create non-colinear vector t
+    t = [w[1], w[2], w[3]]
+    t[argmin(w)] = 1
+    t = Vec3(t[1], t[2], t[3])
+
+    u = normalize(cross(t,w))
+    v = cross(w, u)
+
+    omega = localOmega[1]*u + localOmega[2]*v + localOmega[3]*w
+    omega = normalize(omega)
+    cosTheta = max(0, dot(normal, omega))
+    mult = (eval(material, view, omega) * cosTheta) * (1/pdf(material, omega))
+    return brdfSample(omega, mult)
+end
 
 end
