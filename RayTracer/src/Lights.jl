@@ -24,15 +24,13 @@ end
 
 """ Model area light source as a sphere """
 struct AreaLight <: Light
-    intensity::RGB{Float32}
-    center::Vec3
-    radius
+    geometry
 end
 
 """ Sample from the solid angle subtended by a spherical light source and return a point x' on the light's surface """
 function sampleAreaLight(light::AreaLight, intersection::Vec3)
-    c = light.center
-    r = light.radius
+    c = light.geometry.center
+    r = light.geometry.radius
 
     a = c - intersection #Direction from point towards light's center
     #Create an orthonormal basis where w is the vector from the point to the light's center, normalized
@@ -62,10 +60,18 @@ function sampleAreaLight(light::AreaLight, intersection::Vec3)
 end
 
 """ Probability of having sampled x' """
-function areaLightPDF(light::AreaLight, point::Vec3)
-    sinThetaMax2 = (light.radius^2)/(dot(light.center - point, light.center - point))
+function areaLightPDF(light::AreaLight, point::Vec3, xp::Vec3)
+    c = light.geometry.center
+    r = light.geometry.radius
+
+    lightNormal = (1/r) * (xp - c) #Direction from light center to sampled point x'
+    omega = normalize(xp-point) #Direction from intersection point to the point x' on the luminaire
+    cosThetaPrime = max(0, dot(lightNormal, -omega))       
+    distFactor = 1/(norm(xp - point)*norm(xp-point))
+    
+    sinThetaMax2 = (r*r)/(norm(c - point)*norm(c - point))
     cosThetaMax = sqrt(max(0, 1 - sinThetaMax2))
-    pdf = 1 / (2*pi*(1 - cosThetaMax))
+    pdf = (1 / (2*pi*(1 - cosThetaMax))) * cosThetaPrime*distFactor
     return pdf
 end
 
@@ -147,10 +153,11 @@ end
 
 """ Ray-sphere intersection. """
 function sphere_intersect(ray::Ray, light::AreaLight)
-    squared_radius = light.radius * light.radius
+    lightCenter = light.geometry.center
+    squared_radius = light.geometry.radius * light.geometry.radius
     a = norm(ray.direction)*norm(ray.direction)
-    half_b = dot(ray.direction, (ray.origin - light.center))
-    c = -squared_radius + norm(ray.origin - light.center)*norm(ray.origin - light.center)
+    half_b = dot(ray.direction, (ray.origin - lightCenter))
+    c = -squared_radius + norm(ray.origin - lightCenter)*norm(ray.origin - lightCenter)
     discriminant = (half_b*half_b) - c*a
     if discriminant < 0
         return nothing
