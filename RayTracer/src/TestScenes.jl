@@ -80,23 +80,22 @@ function camera_5(img_height, img_width)
 end
 
 #Parameters sourced from: https://www.graphics.cornell.edu/online/box/data.html
-function cornellBoxCam(img_height, img_width)
+function cornellBoxCam()
     Cameras.PerspectiveCamera(
         Vec3(278, 273, -800), #eye
-        Vec3(0,0,0), #u_axis
-        Vec3(0,1,0), #up
         Vec3(0,0,1), #view
-        0.035, #focal length
-        4.0, #aperture
-        img_height,
-        img_width
+        Vec3(0,1,0), #up
+        40, #VFOV angle in degrees -- roughly a 25mm x 25mm sensor 
+        0.035, #focal length (35mm lens)
+        4.0, #aperture number
+        1, #aspect ratio 1:1
     )
 end
 
-cameras = [camera_1, camera_2, camera_3, camera_4, camera_5]
+cameras = [camera_1, camera_2, camera_3, camera_4, camera_5, cornellBoxCam]
 
-function get_camera(i, img_height, img_width)
-    cameras[i](img_height, img_width)
+function get_camera(i)
+    cameras[i]()
 end
 
 
@@ -108,13 +107,22 @@ function cornellBox()
 bg = BLACK 
 mat_light = Lambertian(WHITE, WHITE, 10)
 objs = []
-#floor
-whiteMat = Lambertian(WHITE, WHITE, 10)
-floor = read_obj("meshes/cb/floor.obj")
-append!(objs, mesh_helper(floor, whiteMat))
-push!(objs, Sphere(Vec3(0,2.0,0.0), 1.0, WHITE, mat_light)) #Light source
 
-lights = [AreaLight(objs[2])] 
+#floor
+#whiteMat = Lambertian(WHITE, WHITE, 10)
+#floor = read_obj("meshes/cb/floor.obj")
+#append!(objs, mesh_helper(floor, whiteMat))
+
+push!(objs, Sphere(Vec3(343.0, 548.8, 227.0), 0.5, WHITE, mat_light)) #Light source
+push!(objs, Sphere(Vec3(343.0, 548.8, 332.0), 0.5, WHITE, mat_light)) #Light source
+push!(objs, Sphere(Vec3(213.0, 548.8, 332.0), 0.5, WHITE, mat_light)) #Light source
+push!(objs, Sphere(Vec3(213.0, 548.8, 227.0), 0.5, WHITE, mat_light)) #Light source
+
+for i in 1:length(objs)
+    println(i, " ", objs[i])
+end
+
+lights = [AreaLight(objs[1])] 
 Scene(bg, objs, lights)
 end
 
@@ -279,6 +287,6 @@ function scene_7()
 end
 
 
-scenes = [scene_1, scene_2, scene_3, scene_4, scene_5, scene_6, scene_7]
+scenes = [scene_1, scene_2, scene_3, scene_4, scene_5, scene_6, scene_7, cornellBox]
 
 end # module TestScenes
