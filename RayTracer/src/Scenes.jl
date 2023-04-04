@@ -36,13 +36,14 @@ object, and the material it should be rendered with. """
 struct Triangle
     geometry::OBJTriangle
     mesh::OBJMesh
+    emission::RGB{Float32} #If surface is a light emitting surface (a luminaire) this will be nonzero
     material
 end
 
 """ Return an Array of all Triangles belonging to the given mesh, assigning
 each one the given material. """
 function create_triangles(mesh::OBJMesh, material)
-    [Triangle(f, mesh, material) for f in mesh.triangles]
+    [Triangle(f, mesh, RGB{Float32}(0,0,0), material) for f in mesh.triangles]
 end
 
 """ Some helper functions that make for easier access to triangle data: """
