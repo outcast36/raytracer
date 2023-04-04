@@ -62,14 +62,18 @@ mutable struct PerspectiveCamera
     v_axis::Vec3 # points up in image space
     w_axis::Vec3 # opposite the view direction
 
-    # the viewport is width 1, parallel to the uv plane and
-    # centered at (0, 0, -focal):
-    focalLength::Real #The distance from the lens to the focal plane.
-    aperture_n::Real #Aperture number n
+    vfov::Real # vertical field of view in degrees
+
+    # the viewport parallel to the uv plane and centered at (0, 0, -d): -- A2 extension support viewports not centered on this point
+    # also support oblique viewing with an additional image plane normal parameter
+    # d is distance from camera eye to viewport (image plane) -- No explicit parameter treat image plane as the focal plane
+
+    #Lens diameter is F/n: where F is focal length and n is aperture number (Distributed Ray Tracing, Cook, 1984)
+    focalLength::Real #The distance from the lens to the focal plane (f).
+    apertureNumber::Real #Ratio between focal length and diameter of the entrance pupil -- same size as lens diameter above
 
     # image dimensions:
-    canv_height::Int # image height in pixels
-    canv_width::Int # image width in pixels
+    aspectRatio::Real #Aspect ratio of the viewport and final image
 end
 
 """ An orthographic camera where rays all travel parallel to the view ray, but originate from the center of each (sub)pixel."""
@@ -87,11 +91,11 @@ mutable struct OrthographicCamera
 end
 
 """ Constructors for cameras """
-function PerspectiveCamera(eye::Vec3, view::Vec3, up::Vec3, focal::Real, aperture_n::Real, canv_height::Int, canv_width::Int)
+function PerspectiveCamera(eye::Vec3, view::Vec3, up::Vec3, vfov::Real, focal::Real, apertureNumber::Real, aspectRatio::Real)
     w_axis = normalize(-view)
-    u_axis = normalize(cross(up, w_axis))
-    v_axis = normalize(cross(w_axis, u_axis))
-    return PerspectiveCamera(eye, u_axis, v_axis, w_axis, focal, aperture_n, canv_height, canv_width)
+    v_axis = normalize(up)
+    u_axis = normalize(cross(w_axis, up))
+    return PerspectiveCamera(eye, u_axis, v_axis, w_axis, vfov, focal, apertureNumber, aspectRatio)
 end
 
 function OrthographicCamera(eye::Vec3, view::Vec3, up::Vec3, canv_height::Int, canv_width::Int)
