@@ -93,8 +93,8 @@ end
 """ Constructors for cameras """
 function PerspectiveCamera(eye::Vec3, view::Vec3, up::Vec3, vfov::Real, focal::Real, apertureNumber::Real, aspectRatio::Real)
     w_axis = normalize(-view)
-    v_axis = normalize(up)
     u_axis = normalize(cross(w_axis, up))
+    v_axis = cross(w_axis, u_axis)
     return PerspectiveCamera(eye, u_axis, v_axis, w_axis, vfov, focal, apertureNumber, aspectRatio)
 end
 
