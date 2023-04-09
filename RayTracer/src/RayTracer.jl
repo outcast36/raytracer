@@ -201,7 +201,7 @@ function main(scene, camera, width, spp, outfile)
                     pixel_color += traceray(scene, view_ray, 1e-8, Inf32, 0)
                 end
             end
-            pixel_color *= (1/(n*n))
+            pixel_color *= (1/spp)
             canvas[i,j] = gamma_correct(pixel_color) #set the color of the pixel based on the traced ray
         end
     end
