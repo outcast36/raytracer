@@ -176,25 +176,32 @@ function glossyReflect(r::Vec3, n::Vec3)
 end
 
 # Main loop:
-function main(scene, camera, height, width, N, outfile)
+function main(scene, camera, width, spp, outfile)
 
     # get the requested scene and camera
     scene = TestScenes.get_scene(scene)
-    camera = TestScenes.get_camera(camera, height, width)
+    camera = TestScenes.get_camera(camera)
 
     # Create a blank canvas to store the image:
+    height = div(width, camera.aspectRatio)
     canvas = zeros(RGB{Float32}, height, width)
-    N_SUBPIXELS = isqrt(N)
+    n = isqrt(spp)
+
     for i in 1:height #for each pixel
         for j in 1:width
             pixel_color = BLACK
-            for s in 1:N
-                subpix = Cameras.convertSubpixel(s, N_SUBPIXELS)
-                #Choose a ray given (x,y): world coordinates of the current (sub)pixel, (u,v): ray origin on camera lens and direction through focal point, and t: time (for motion blur)
-                view_ray = Cameras.pixel_to_ray(camera, subpix, N_SUBPIXELS, i, j)
-                pixel_color += traceray(scene, view_ray, 1e-8, Inf32, 0)
+            # n x n samples per pixel
+            for si in 1:n 
+                for sj in 1:n #Loop over n x n subpixel grid
+                #Choose a ray given (x, y, u, v, t)
+                # x, y: world coordinates of pixel sample for antialiasing
+                # u, v: camera aperture
+                # t: time of ray for motion blur
+                    view_ray = Cameras.pixel_to_ray(camera, height, width, n, si, sj, i, j)
+                    pixel_color += traceray(scene, view_ray, 1e-8, Inf32, 0)
+                end
             end
-            pixel_color *= (1/N)
+            pixel_color *= (1/(n*n))
             canvas[i,j] = gamma_correct(pixel_color) #set the color of the pixel based on the traced ray
         end
     end
