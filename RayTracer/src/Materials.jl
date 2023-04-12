@@ -63,11 +63,10 @@ function sample(material::Lambertian, view::Vec3, normal::Vec3)
     t[argmin(w)] = 1
     t = Vec3(t[1], t[2], t[3])
 
-    u = normalize(cross(t,w))
+    u = normalize(cross(view,w))
     v = cross(w, u)
 
     omega = localOmega[1]*u + localOmega[2]*v + localOmega[3]*w
-    omega = normalize(omega)
     cosTheta = max(0, dot(normal, omega))
     mult = (eval(material, view, omega) * cosTheta) * (1/pdf(material, omega))
     return brdfSample(omega, mult)
