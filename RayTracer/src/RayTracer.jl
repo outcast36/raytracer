@@ -76,7 +76,7 @@ function traceray(scene::Scene, ray::Ray, tmin, tmax, depth)
     material = object.material
     
     roulette = rand()
-    color = object.emission #* max(0, dot(normal, -ray.direction))
+    color = object.emission
     termCond = ((roulette <= probTerm) && (depth >=4))
     if (termCond)
         return color
