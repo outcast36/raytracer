@@ -63,8 +63,9 @@ function gamma_correct(color)
 end
 
 """ Core of Monte Carlo Path Tracing -- Integrate rendering equation via MC methods """
-function traceray(scene::Scene, ray::Ray, tmin, tmax, depth)
-    probTerm = 0.55
+function traceray(scene::Scene, ray::Ray, throughput, tmin, tmax, depth)
+    probrr = 0.75#max(red(throughput), green(throughput), blue(throughput)) #probability that a path continues bouncing
+    #println(throughput, " ", depth)
     #Trace ray to find point of intersection with the nearest surface
     closestHit = closest_intersect(scene.objects, ray, tmin, tmax)
     if (closestHit === nothing)
@@ -77,16 +78,18 @@ function traceray(scene::Scene, ray::Ray, tmin, tmax, depth)
     
     roulette = rand()
     color = object.emission
-    termCond = ((roulette <= probTerm) && (depth >=4))
+    termCond = ((roulette <= probrr) && (depth >=4)) # (1 - p_rr) probability to terminate path at current step 
     if (termCond)
-        return color
+        #https://graphics.stanford.edu/courses/cs348b-01/course29.hanrahan.pdf
+        return color#colorMultiply(color, throughput) #If emitted: return weight * Le (Page 9)
     end
     brdfVals = sample(material, -ray.direction, normal)
     brdfFactor = brdfVals.mult
     omega = brdfVals.omega
+    throughput = colorMultiply(throughput, brdfFactor) * (1/probrr) 
     recurRay = Ray(point, omega)
-    recurColor = traceray(scene, recurRay, tmin, tmax, depth+1)
-    color += colorMultiply(brdfFactor, recurColor) * (1/probTerm) #fr * cos(omega) * 1/P(omega) 
+    recurColor = traceray(scene, recurRay, throughput, tmin, tmax, depth+1)
+    color += colorMultiply(brdfFactor, recurColor) * (1/probrr) #fr * cos(omega) * 1/P(omega) 
     return color 
 end
 
@@ -198,7 +201,7 @@ function main(scene, camera, width, spp, outfile)
                 # u, v: camera aperture
                 # t: time of ray for motion blur
                     view_ray = Cameras.pixel_to_ray(camera, height, width, n, si, sj, i, j)
-                    pixel_color += traceray(scene, view_ray, 1e-8, Inf32, 0)
+                    pixel_color += traceray(scene, view_ray, WHITE, 1e-8, Inf32, 1)
                 end
             end
             pixel_color *= (1/spp)
