@@ -1,6 +1,7 @@
 module GfxBase
 
-export Vec3, Vec2, Ray, randomUnitSphere, randomHemiSphere, uniformHemiSphere, colorMultiply, uniformSampleSphere, randomUnitDisk
+export Vec3, Vec2, Ray, randomUnitSphere, randomHemiSphere, uniformHemiSphere, cosineWeightedHemisphere
+export colorMultiply, uniformSampleSphere, randomUnitDisk
 
 using Images
 using StaticArrays
@@ -59,6 +60,19 @@ function uniformHemiSphere()
     sz = cosTheta
     return Vec3(sx, sy, sz)
 end
+
+function cosineWeightedHemisphere()
+    sample = Vec2(rand(), rand())
+    cosTheta = sqrt(sample[1])
+    sinTheta = sqrt(1-(cosTheta*cosTheta))
+    cosPhi = cos(2*pi*sample[2])
+    sinPhi = sin(2*pi*sample[2])
+    sx = cosPhi*sinTheta
+    sy = sinPhi*sinTheta
+    sz = cosTheta
+    return Vec3(sx, sy, sz)
+
+end 
 
 """ Multiply two RGB colors channelwise """
 function colorMultiply(a, b)
