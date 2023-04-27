@@ -19,21 +19,30 @@ PINK = RGB{Float32}(0.7, 0.3, 0.3)
 LIME = RGB{Float32}(0.33, 0.97, 0.26)
 SILVER = RGB{Float32}(0.8, 0.8, 0.8)
 GOLD = RGB{Float32}(0.8, 0.6, 0.2)
+CHERRY = RGB{Float32}(1.0, 0.3, 0.3)
 
 """ Take the OBJMesh mesh and return an array of Triangles from the mesh
 with the given material, after scaling the mesh positions by scale and moving
 them by translation """
-function mesh_helper(mesh, material, scale=1.0, translation=Vec3(0,0,0))
+function mesh_helper(mesh, emission, material, scale=1.0, translation=Vec3(0,0,0))
 
     for i in 1:length(mesh.positions)
         mesh.positions[i] = mesh.positions[i] * scale + translation
     end
 
-    create_triangles(mesh, material)
+    create_triangles(mesh, emission, material)
 end
 
-function camera_1(img_height, img_width)
-    CanonicalCamera(img_height, img_width)
+function camera_1()
+    Cameras.PerspectiveCamera(
+        Vec3(0,0,0), #eye
+        Vec3(0,0,-1), #view
+        Vec3(0,1,0), #up
+        53.1301, #FOV
+        1.0, #focal
+        16.0, #aperture
+        1 #aspect ratio 1:1
+    )
 end
 
 function camera_2(img_height, img_width)
@@ -69,15 +78,15 @@ function camera_4(img_height, img_width)
         img_width) # canv_width::Int)
 end
 
-function camera_5(img_height, img_width)
-
-    Cameras.OrthographicCamera(
-        Vec3(0, 0.0, 0.0),  # eye::Vec3
-        Vec3(0.0, 0.0, -1.0), # view::Vec3
-        Vec3(0, 1, 0),   # up::Vec3
-        img_height,
-        img_width)
-end
+#function camera_5(img_height, img_width)
+#
+#    Cameras.OrthographicCamera(
+#        Vec3(0, 0.0, 0.0),  # eye::Vec3
+#        Vec3(0.0, 0.0, -1.0), # view::Vec3
+#        Vec3(0, 1, 0),   # up::Vec3
+#        img_height,
+#        img_width)
+#end
 
 #Parameters sourced from: https://www.graphics.cornell.edu/online/box/data.html
 function cornellBoxCam()
@@ -85,14 +94,14 @@ function cornellBoxCam()
         Vec3(278, 273, -800), #eye
         Vec3(0,0,1), #view
         Vec3(0,1,0), #up
-        40, #VFOV angle in degrees -- roughly a 25mm x 25mm sensor 
+        39.3076, #VFOV angle in degrees -- roughly a 25mm x 25mm sensor 
         0.035, #focal length (35mm lens)
         4.0, #aperture number
         1, #aspect ratio 1:1
     )
 end
 
-cameras = [camera_1, camera_2, camera_3, camera_4, camera_5, cornellBoxCam]
+cameras = [camera_1, camera_2, camera_3, camera_4, cornellBoxCam]
 
 function get_camera(i)
     cameras[i]()
@@ -105,24 +114,48 @@ end
 
 function cornellBox()
 bg = BLACK 
-mat_light = Lambertian(WHITE, WHITE, 10)
+lightColor = RGB{Float32}(0.78, 0.78, 0.78)
+mat_light = Lambertian(lightColor, lightColor, 10)
 objs = []
 
 #floor
-#whiteMat = Lambertian(WHITE, WHITE, 10)
-#floor = read_obj("meshes/cb/floor.obj")
-#append!(objs, mesh_helper(floor, whiteMat))
+whiteMat = Lambertian(WHITE, WHITE, 10)
+floor = read_obj("meshes/cb/floor.obj")
+append!(objs, mesh_helper(floor, BLACK, whiteMat))
 
-push!(objs, Sphere(Vec3(343.0, 548.8, 227.0), 0.5, WHITE, mat_light)) #Light source
-push!(objs, Sphere(Vec3(343.0, 548.8, 332.0), 0.5, WHITE, mat_light)) #Light source
-push!(objs, Sphere(Vec3(213.0, 548.8, 332.0), 0.5, WHITE, mat_light)) #Light source
-push!(objs, Sphere(Vec3(213.0, 548.8, 227.0), 0.5, WHITE, mat_light)) #Light source
+#left wall (red)
+redMat = Lambertian(RED, RED, 10)
+left = read_obj("meshes/cb/left.obj")
+append!(objs, mesh_helper(left, BLACK, redMat))
 
-for i in 1:length(objs)
-    println(i, " ", objs[i])
-end
+#back wall
+back = read_obj("meshes/cb/back.obj")
+append!(objs, mesh_helper(back, BLACK, whiteMat))
 
-lights = [AreaLight(objs[1])] 
+#right wall (green)
+greenMat = Lambertian(GREEN, GREEN, 10)
+right = read_obj("meshes/cb/right.obj")
+append!(objs, mesh_helper(right, BLACK, greenMat))
+
+#top wall
+top = read_obj("meshes/cb/top.obj")
+append!(objs, mesh_helper(top, BLACK, whiteMat))
+
+#tall block
+tall = read_obj("meshes/cb/tall_box.obj")
+append!(objs, mesh_helper(tall, BLACK, whiteMat))
+
+#light source
+lightBox = read_obj("meshes/cb/light.obj")
+append!(objs, mesh_helper(lightBox, WHITE, mat_light))
+
+#small block
+small = read_obj("meshes/cb/small_box.obj")
+append!(objs, mesh_helper(small, BLACK, whiteMat))
+
+println("Objects in scene ", length(objs))
+
+lights = [AreaLight(objs[3])] #NOT USED IN ANYTHING
 Scene(bg, objs, lights)
 end
 
@@ -142,10 +175,9 @@ function scene_1()
     push!(objs, Sphere(Vec3(0, 0.0, -3.0), 0.5, BLACK, mat_center)) #Red
     push!(objs, Sphere(Vec3(1.0, 0.0, -3.5), 0.5, BLACK, mat_right)) #Green
     push!(objs, Sphere(Vec3(0,-101,-1), 100.0, BLACK, mat_ground))
-    push!(objs, Sphere(Vec3(0,3.0,3), 1.0, WHITE, mat_light)) #Light source
     push!(objs, Sphere(Vec3(0,3.0,-8), 1.0, WHITE, mat_light)) #Light source
 
-    lights = [AreaLight(objs[5]), AreaLight(objs[6])] 
+    lights = [AreaLight(objs[5])] 
     Scene(bg, objs, lights)
 end
 
