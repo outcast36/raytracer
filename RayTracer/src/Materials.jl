@@ -47,14 +47,16 @@ function eval(material::Lambertian, view::Vec3, omega::Vec3)
     return material.albedo * (1/pi)
 end
 
-function pdf(material::Lambertian, omega::Vec3)
-    return 1/(2*pi) #surface area of hemisphere and all omega are equally likely
+function pdf(material::Lambertian, normal::Vec3, omega::Vec3)
+    cosTheta = max(0, dot(normal, omega))
+    #PDF for uniform hemisphere sampling is 1/2pi
+    return cosTheta/pi #cosine weighted hemisphere pdf 
 end
 
 """ Sample the upper hemisphere around the surface normal. Assumes
     that view and normal are normalized """
 function sample(material::Lambertian, view::Vec3, normal::Vec3)
-    localOmega = uniformHemiSphere()
+    localOmega = cosineWeightedHemisphere()
 
     #Construct basis to bring omega into world space (the hemisphere aligned with the normal)
     w = normal
@@ -68,7 +70,7 @@ function sample(material::Lambertian, view::Vec3, normal::Vec3)
 
     omega = localOmega[1]*u + localOmega[2]*v + localOmega[3]*w
     cosTheta = max(0, dot(normal, omega))
-    mult = (eval(material, view, omega) * cosTheta) * (1/pdf(material, omega))
+    mult = (eval(material, view, omega) * cosTheta) * (1/pdf(material, normal, omega))
     return brdfSample(omega, mult)
 end
 
