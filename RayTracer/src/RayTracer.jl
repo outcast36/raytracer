@@ -64,29 +64,29 @@ end
 
 """ Core of Monte Carlo Path Tracing -- Integrate rendering equation via MC methods """
 function traceray(scene::Scene, ray::Ray, throughput, tmin, tmax, depth)
-    probrr = 0.75#max(red(throughput), green(throughput), blue(throughput)) #probability that a path continues bouncing
-    #println(throughput, " ", depth)
+    probrr = max(red(throughput), green(throughput), blue(throughput)) #probability that a path continues bouncing
     #Trace ray to find point of intersection with the nearest surface
     closestHit = closest_intersect(scene.objects, ray, tmin, tmax)
     if (closestHit === nothing)
-        return scene.background
+        return scene.background #Black background
     end
     normal = closestHit.normal
     object = closestHit.object
     point = closestHit.intersection
     material = object.material
-    
+    color = object.emission #Constant color in place of emission function (Le)
+
+    #Russian roulette -- Randomly decide to compute emitted or reflected light
+    #https://graphics.stanford.edu/courses/cs348b-01/course29.hanrahan.pdf
     roulette = rand()
-    color = object.emission
-    termCond = ((roulette <= probrr) && (depth >=4)) # (1 - p_rr) probability to terminate path at current step 
+    termCond = ((roulette > probrr) && (depth >=4)) # (1 - p_rr) probability to terminate path at current step 
     if (termCond)
-        #https://graphics.stanford.edu/courses/cs348b-01/course29.hanrahan.pdf
-        return color#colorMultiply(color, throughput) #If emitted: return weight * Le (Page 9)
+        return colorMultiply(color, throughput) #If emitted: return weight * Le (Page 9, Step 3A)
     end
     brdfVals = sample(material, -ray.direction, normal)
     brdfFactor = brdfVals.mult
     omega = brdfVals.omega
-    throughput = colorMultiply(throughput, brdfFactor) * (1/probrr) 
+    throughput = colorMultiply(throughput, brdfFactor) * (1/probrr) #If reflected: weight *= reflectance (Page 9, Step 3B)
     recurRay = Ray(point, omega)
     recurColor = traceray(scene, recurRay, throughput, tmin, tmax, depth+1)
     color += colorMultiply(brdfFactor, recurColor) * (1/probrr) #fr * cos(omega) * 1/P(omega) 
