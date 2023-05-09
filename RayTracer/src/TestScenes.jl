@@ -124,7 +124,8 @@ floor = read_obj("meshes/cb/floor.obj")
 append!(objs, mesh_helper(floor, BLACK, whiteMat))
 
 #left wall (red)
-redMat = Lambertian(RED, RED, 10)
+redWall = RGB{Float32}(1.0, 0.15, 0.0)
+redMat = Lambertian(redWall, redWall, 10)
 left = read_obj("meshes/cb/left.obj")
 append!(objs, mesh_helper(left, BLACK, redMat))
 
@@ -133,7 +134,8 @@ back = read_obj("meshes/cb/back.obj")
 append!(objs, mesh_helper(back, BLACK, whiteMat))
 
 #right wall (green)
-greenMat = Lambertian(GREEN, GREEN, 10)
+greenWall = RGB{Float32}(0.15, 1.0, 0.0)
+greenMat = Lambertian(greenWall, greenWall, 10)
 right = read_obj("meshes/cb/right.obj")
 append!(objs, mesh_helper(right, BLACK, greenMat))
 
