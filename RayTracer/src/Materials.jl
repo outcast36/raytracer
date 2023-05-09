@@ -48,7 +48,7 @@ function eval(material::Lambertian, view::Vec3, omega::Vec3)
 end
 
 function pdf(material::Lambertian, normal::Vec3, omega::Vec3)
-    cosTheta = max(0, dot(normal, omega))
+    cosTheta = dot(normal, omega)
     #PDF for uniform hemisphere sampling is 1/2pi
     return cosTheta/pi #cosine weighted hemisphere pdf 
 end
@@ -69,7 +69,7 @@ function sample(material::Lambertian, view::Vec3, normal::Vec3)
     v = cross(w, u)
 
     omega = localOmega[1]*u + localOmega[2]*v + localOmega[3]*w
-    cosTheta = max(0, dot(normal, omega))
+    cosTheta = dot(normal, omega)
     mult = (eval(material, view, omega) * cosTheta) * (1/pdf(material, normal, omega))
     return brdfSample(omega, mult)
 end
