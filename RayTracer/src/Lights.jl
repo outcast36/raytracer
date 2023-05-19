@@ -8,10 +8,12 @@ export sampleAreaLight, areaLightPDF, areaLightBRDF
 
 using ..GfxBase
 
+
+######################################################################
 # Light types:
 #  - directional is a distant source whose direction is always the same
 #  - point light emits light from a single position in 3D
-abstract type Light end
+
 struct DirectionalLight <: Light
     normalIrradiance::RGB{Float32}
     direction::Vec3
@@ -22,10 +24,17 @@ struct PointLight <: Light
     position::Vec3
 end
 
+######################################################################
+
+abstract type Light end
+
 """ Model area light source as a sphere """
-struct AreaLight <: Light
+struct SphericalLight <: Light
     geometry
 end
+
+""" Model area light with a triangle mesh """
+struct MeshLight <: Light
 
 """ Sample from the solid angle subtended by a spherical light source and return a point x' on the light's surface """
 function sampleAreaLight(light::AreaLight, intersection::Vec3)
