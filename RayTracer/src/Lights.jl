@@ -2,29 +2,10 @@ module Lights
 
 using LinearAlgebra
 
-export Light, DirectionalLight, AmbientLight, PointLight, AreaLight
-export light_direction, shade_light
-export sampleAreaLight, areaLightPDF, areaLightBRDF
+export Light
+export sampleLight, lightPDF
 
 using ..GfxBase
-
-
-######################################################################
-# Light types:
-#  - directional is a distant source whose direction is always the same
-#  - point light emits light from a single position in 3D
-
-struct DirectionalLight <: Light
-    normalIrradiance::RGB{Float32}
-    direction::Vec3
-end
-
-struct PointLight <: Light
-    intensity::RGB{Float32}
-    position::Vec3
-end
-
-######################################################################
 
 abstract type Light end
 
@@ -33,11 +14,18 @@ struct SphericalLight <: Light
     geometry
 end
 
-""" Model area light with a triangle mesh """
-struct MeshLight <: Light
+""" Model area light with a single triangle """
+struct TriangleLight <: Light
+    geometry
+end
 
-""" Sample from the solid angle subtended by a spherical light source and return a point x' on the light's surface """
-function sampleAreaLight(light::AreaLight, intersection::Vec3)
+#disk light
+
+#cylinder/surface of rotation light
+
+""" Sample a point on a spherical light in the solid angle subtended by the light at point x """
+function sampleLight(light::SphericalLight, intersection::Vec3)
+    #PHYSICALLY CORRECT DIRECT LIGHTING FOR DISTRIBUTION RAY TRACING, Page 4 -- Changyaw Wang, 1992
     c = light.geometry.center
     r = light.geometry.radius
 
@@ -68,8 +56,13 @@ function sampleAreaLight(light::AreaLight, intersection::Vec3)
     return xPrime
 end
 
-""" Probability of having sampled x' """
-function areaLightPDF(light::AreaLight, point::Vec3, xp::Vec3)
+""" Sample a point uniformly over a given triangle's area """
+function sampleLight(light::TriangleLight, x::Vec3)
+    return 0
+end
+
+""" Probability of having sampled x' with solid angle sampling """
+function lightPDF(light::SphericalLight, point::Vec3, xp::Vec3)
     c = light.geometry.center
     r = light.geometry.radius
 
@@ -84,84 +77,8 @@ function areaLightPDF(light::AreaLight, point::Vec3, xp::Vec3)
     return pdf
 end
 
-""" Compute lighting via Blinn-Phong BRDF """
-function areaLightBRDF(material, light::AreaLight, ray::Ray, normal::Vec3, intersection::Vec3, xp::Vec3)
-    #Irradiance calculations
-    light_vector = normalize(xp - intersection) #Treat sample point as if it were a singular point light
-    distFromLight = norm(xp - intersection)
-    n_dot_l = dot(normal, light_vector)
-    irradiance = light.intensity * (1/(distFromLight^2)) * max(0, n_dot_l) #RGB color
-
-    #!! -- RGB color * RGB color -- !!#
-    diffuse_light = colorMultiply(material.albedo, irradiance)
-
-    #Specular light calculations
-    view_direction = -ray.direction
-    half_vector = normalize(light_vector + view_direction)
-    n_dot_h = dot(normal, half_vector)
-
-    #!! -- RGB color * RGB color -- !!#
-    specular_light = (max(0, n_dot_h)^material.specularExp) * colorMultiply(material.specularColor, irradiance)
-    return diffuse_light + specular_light #RGB color + RGB color
-end
-    
-""" Calculate the direction of a given light source from the position point """
-function light_direction(light::Light, point::Vec3) end
-
-function light_direction(light::DirectionalLight, point::Vec3)
-    return normalize(light.direction)
-end
-
-# point source: direction from the point to the light position, normalized
-function light_direction(light::PointLight, point::Vec3)
-    return normalize(light.position - point)
-end
-
-""" Determine point-light contribution for shading a diffuse surface """
-function shade_light(material, ray::Ray, normal::Vec3, intersection::Vec3, light::PointLight)
-    #Irradiance calculations
-    light_vector = light_direction(light, intersection)
-    distFromLight = norm(intersection - light.position)
-    n_dot_l = dot(normal, light_vector)
-    irradiance = light.intensity * (1/(distFromLight^2)) * max(0, n_dot_l) #RGB color 
-
-    #!! -- RGB color * RGB color -- !!#
-    diffuse_light = colorMultiply(material.albedo, irradiance)
-
-    #Specular light calculations
-    view_direction = -ray.direction
-    half_vector = normalize(light_vector + view_direction)
-    n_dot_h = dot(normal, half_vector)
-
-    #!! -- RGB color * RGB color -- !!#
-    specular_light = (max(0, n_dot_h)^material.specularExp) * colorMultiply(material.specularColor, irradiance)
-    
-    return diffuse_light + specular_light #RGB color + RGB color
-end
-
-""" Determine direction-light contribution for shading a diffuse surface """
-function shade_light(material, ray::Ray, normal::Vec3, intersection::Vec3, light::DirectionalLight)
-    #Irradiance calculations
-    light_vector = light_direction(light, intersection)
-    n_dot_l = dot(normal, light_vector)
-    irradiance = light.normalIrradiance * max(0, n_dot_l)  #RGB color
-    
-    #!! -- RGB color * RGB color -- !!#
-    diffuse_light = colorMultiply(material.albedo, irradiance)
-    
-    #Specular light calculations
-    view_direction = -ray.direction
-    half_vector = normalize(light_vector + view_direction)
-    n_dot_h = dot(normal, half_vector)
-
-    #!! -- RGB color * RGB color -- !!#
-    specular_light = (max(0, n_dot_h)^material.specularExp) * colorMultiply(material.specularColor, irradiance)
-    
-    return diffuse_light + specular_light #RGB color + RGB color
-end
-
 """ Ray-sphere intersection. """
-function sphere_intersect(ray::Ray, light::AreaLight)
+function sphere_intersect(ray::Ray, light::SphericalLight)
     lightCenter = light.geometry.center
     squared_radius = light.geometry.radius * light.geometry.radius
     a = norm(ray.direction)*norm(ray.direction)
