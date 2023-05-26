@@ -2,7 +2,7 @@ module Lights
 
 using LinearAlgebra
 
-export Light
+export Light, SphericalLight
 export sampleLight, lightPDF
 
 using ..GfxBase
