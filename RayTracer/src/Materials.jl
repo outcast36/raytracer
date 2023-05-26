@@ -8,7 +8,7 @@ using ..GfxBase
 
 export Material
 export Lambertian, Metallic, Dielectric, Glossy
-export sample, brdfSample
+export sample, pdf, brdfSample
 
 mutable struct brdfSample
     omega::Vec3
