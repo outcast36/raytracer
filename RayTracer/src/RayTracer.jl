@@ -64,6 +64,7 @@ end
 
 """ Core of Monte Carlo Path Tracing -- Integrate rendering equation via MC methods """
 function traceray(scene::Scene, ray::Ray, throughput, tmin, tmax, depth)
+    numLights = length(scene.lights)
     probrr = max(red(throughput), green(throughput), blue(throughput)) #probability that a path continues bouncing
     #Trace ray to find point of intersection with the nearest surface
     closestHit = closest_intersect(scene.objects, ray, tmin, tmax)
@@ -83,6 +84,7 @@ function traceray(scene::Scene, ray::Ray, throughput, tmin, tmax, depth)
     if (termCond)
         return colorMultiply(color, throughput) #If emitted: return weight * Le (Page 9, Step 3A)
     end
+
     brdfVals = sample(material, -ray.direction, normal)
     brdfFactor = brdfVals.mult
     omega = brdfVals.omega
@@ -91,6 +93,19 @@ function traceray(scene::Scene, ray::Ray, throughput, tmin, tmax, depth)
     recurColor = traceray(scene, recurRay, throughput, tmin, tmax, depth+1)
     color += colorMultiply(brdfFactor, recurColor) * (1/probrr) #fr * cos(omega) * 1/P(omega) 
     return color 
+end
+
+""" Uniformly select a light source index and return it """
+function selectLight(lights)
+    numLights = length(lights)
+    return ceil(Int, rand() * numLights)
+end
+
+function lightNormal(light::TriangleLight, samplePoint)
+    a = Scenes.get_vertex(light.geometry, 1)
+    b = Scenes.get_vertex(light.geometry, 2)
+    c = Scenes.get_vertex(light.geometry, 3)
+    return normalize(cross(b-a, c-a))
 end
 
 """ Compute reflection ray direction for reflective surfaces """
