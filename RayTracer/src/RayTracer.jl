@@ -63,7 +63,7 @@ function gamma_correct(color)
 end
 
 """ Core of Monte Carlo Path Tracing -- Integrate rendering equation via MC methods """
-function traceray(scene::Scene, ray::Ray, throughput, tmin, tmax, depth)
+function traceray(scene::Scene, ray::Ray, prevPDF, throughput, tmin, tmax, depth)
     numLights = length(scene.lights)
     probrr = max(red(throughput), green(throughput), blue(throughput)) #probability that a path continues bouncing
     #Trace ray to find point of intersection with the nearest surface
@@ -77,6 +77,36 @@ function traceray(scene::Scene, ray::Ray, throughput, tmin, tmax, depth)
     material = object.material
     color = object.emission #Constant color in place of emission function (Le)
 
+    if (color != BLACK) #Recursive path hits light source
+        if (depth == 0)
+            return color
+        else
+            areaMeasure = max(0, dot(normal, -ray.direction))/dot(point - ray.origin, point - ray.origin)
+            w_indirect = (prevPDF*areaMeasure) / ((1/2*1/6825)+(prevPDF*areaMeasure))
+            return w_indirect * color
+        end
+    end    
+    
+    #Light source sampling
+    selectedLight = scene.lights[selectLight(scene.lights)]
+    samplePoint = sampleLight(selectedLight, point) #Select a point uniformly over light source's area
+    lightEmission = selectedLight.geometry.emission
+    direction = normalize(samplePoint - point)
+    #Compute direct light via light source sampling
+    direct = BLACK
+    area = 6825
+    cosThetaPrime = max(0, dot(Vec3(0, -1, 0), -direction))
+    geom = cosThetaPrime / dot(samplePoint - point, samplePoint - point) #Project light source area onto hemisphere
+    w_direct = (1/2*1/6825) / (pdf(material, normal, direction)*geom + (1/2*1/6825))
+    #Max with zero for points that lie on the ceiling where the cosine should be 0
+    cosTheta = max(0, dot(normal, direction))
+    visibilityCheck = closest_intersect(scene.objects, Ray(point, direction), tmin, tmax) 
+    if (visibilityCheck.object == selectedLight.geometry)
+        #N_L * fr * Le * cosTheta * G(x, x') * V(x, x')
+       direct = numLights * (1/pi) * colorMultiply(material.albedo, lightEmission) * cosTheta * area * geom 
+       direct *= w_direct
+    end
+
     #Russian roulette -- Randomly decide to compute emitted or reflected light
     #https://graphics.stanford.edu/courses/cs348b-01/course29.hanrahan.pdf
     roulette = rand()
@@ -85,13 +115,15 @@ function traceray(scene::Scene, ray::Ray, throughput, tmin, tmax, depth)
         return colorMultiply(color, throughput) #If emitted: return weight * Le (Page 9, Step 3A)
     end
 
+    #Cosine weighted BRDF sampling
     brdfVals = sample(material, -ray.direction, normal)
-    brdfFactor = brdfVals.mult
+    brdfFactor = brdfVals.mult #fr * cos(omega) * 1/P(omega)
     omega = brdfVals.omega
     throughput = colorMultiply(throughput, brdfFactor) * (1/probrr) #If reflected: weight *= reflectance (Page 9, Step 3B)
     recurRay = Ray(point, omega)
-    recurColor = traceray(scene, recurRay, throughput, tmin, tmax, depth+1)
-    color += colorMultiply(brdfFactor, recurColor) * (1/probrr) #fr * cos(omega) * 1/P(omega) 
+    recurColor = traceray(scene, recurRay, pdf(material, normal, omega), throughput, tmin, tmax, depth+1)
+    indirect = (colorMultiply(brdfFactor, recurColor))
+    color += (direct + indirect) * (1/probrr) #fr * cos(omega) * 1/P(omega) 
     return color 
 end
 
@@ -99,6 +131,11 @@ end
 function selectLight(lights)
     numLights = length(lights)
     return ceil(Int, rand() * numLights)
+end
+
+
+function estimateDirect()
+    return 0
 end
 
 function lightNormal(light::TriangleLight, samplePoint)
@@ -216,7 +253,7 @@ function main(scene, camera, width, spp, outfile)
                 # u, v: camera aperture
                 # t: time of ray for motion blur
                     view_ray = Cameras.pixel_to_ray(camera, height, width, n, si, sj, i, j)
-                    pixel_color += traceray(scene, view_ray, WHITE, 1e-8, Inf32, 1)
+                    pixel_color += traceray(scene, view_ray, 1.0, WHITE, 1e-8, Inf32, 0)
                 end
             end
             pixel_color *= (1/spp)
