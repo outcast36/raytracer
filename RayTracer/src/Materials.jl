@@ -7,7 +7,7 @@ using LinearAlgebra
 using ..GfxBase
 
 export Material
-export Lambertian, Metallic, Dielectric, Glossy
+export Lambertian, Specular, Dielectric, Glossy
 export sample, pdf, brdfSample
 
 mutable struct brdfSample
@@ -23,7 +23,7 @@ mutable struct Lambertian <: Material
     specularExp
 end
 
-mutable struct Metallic <: Material
+mutable struct Specular <: Material #Perfect mirror material
     albedo::RGB{Float32}
     specularColor::RGB{Float32}
     specularExp
@@ -50,7 +50,7 @@ end
 function pdf(material::Lambertian, normal::Vec3, omega::Vec3)
     cosTheta = dot(normal, omega)
     #PDF for uniform hemisphere sampling is 1/2pi
-    return cosTheta/pi #cosine weighted hemisphere pdf 
+    return cosTheta * (1/pi) #cosine weighted hemisphere pdf 
 end
 
 """ Sample the upper hemisphere around the surface normal. Assumes
@@ -60,18 +60,38 @@ function sample(material::Lambertian, view::Vec3, normal::Vec3)
 
     #Construct basis to bring omega into world space (the hemisphere aligned with the normal)
     w = normal
-    #Create non-colinear vector t
-    t = [w[1], w[2], w[3]]
-    t[argmin(w)] = 1
-    t = Vec3(t[1], t[2], t[3])
 
     u = normalize(cross(view,w))
     v = cross(w, u)
 
     omega = localOmega[1]*u + localOmega[2]*v + localOmega[3]*w
     cosTheta = dot(normal, omega)
+    if (cosTheta < 0)
+        omega = -omega
+    end
     mult = (eval(material, view, omega) * cosTheta) * (1/pdf(material, normal, omega))
     return brdfSample(omega, mult)
 end
+
+""" Perfect specular material brdf """
+function eval(Material::Specular, view::Vec3, omega::Vec3)
+    return 0
+end
+
+function pdf(Material::Specular, normal::Vec3, omega::Vec3)
+    return 0
+end
+
+""" Sample the upper hemisphere around the surface normal. Assumes
+    that view and normal are normalized """
+function sample(Material::Specular, view::Vec3, normal::Vec3)
+    mirrorDirection = 2*dot(normal,view)*normal - view
+    mult = RGB{Float32}(1.0, 1.0, 1.0)
+    return brdfSample(mirrorDirection, mult)
+end
+
+
+
+
 
 end
