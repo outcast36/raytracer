@@ -113,52 +113,100 @@ function get_scene(i)
 end
 
 function cornellBox()
-bg = BLACK 
-lightColor = RGB{Float32}(0.78, 0.78, 0.78)
-mat_light = Lambertian(lightColor, lightColor, 10)
-objs = []
+    bg = BLACK 
+    lightColor = RGB{Float32}(0.78, 0.78, 0.78)
+    mat_light = Lambertian(lightColor, lightColor, 10)
+    objs = []
 
-#floor
-whiteMat = Lambertian(WHITE, WHITE, 10)
-floor = read_obj("meshes/cb/floor.obj")
-append!(objs, mesh_helper(floor, BLACK, whiteMat))
+    #floor
+    whiteMat = Lambertian(WHITE, WHITE, 10)
+    floor = read_obj("meshes/cb/floor.obj")
+    append!(objs, mesh_helper(floor, BLACK, whiteMat))
 
-#left wall (red)
-redWall = RGB{Float32}(1.0, 0.15, 0.0)
-redMat = Lambertian(redWall, redWall, 10)
-left = read_obj("meshes/cb/left.obj")
-append!(objs, mesh_helper(left, BLACK, redMat))
+    #left wall (red)
+    redWall = RGB{Float32}(1.0, 0.15, 0.0)
+    redMat = Lambertian(redWall, redWall, 10)
+    left = read_obj("meshes/cb/left.obj")
+    append!(objs, mesh_helper(left, BLACK, redMat))
 
-#back wall
-back = read_obj("meshes/cb/back.obj")
-append!(objs, mesh_helper(back, BLACK, whiteMat))
+    #back wall
+    back = read_obj("meshes/cb/back.obj")
+    append!(objs, mesh_helper(back, BLACK, whiteMat))
 
-#right wall (green)
-greenWall = RGB{Float32}(0.15, 1.0, 0.0)
-greenMat = Lambertian(greenWall, greenWall, 10)
-right = read_obj("meshes/cb/right.obj")
-append!(objs, mesh_helper(right, BLACK, greenMat))
+    #right wall (green)
+    greenWall = RGB{Float32}(0.15, 1.0, 0.0)
+    greenMat = Lambertian(greenWall, greenWall, 10)
+    right = read_obj("meshes/cb/right.obj")
+    append!(objs, mesh_helper(right, BLACK, greenMat))
 
-#top wall
-top = read_obj("meshes/cb/top.obj")
-append!(objs, mesh_helper(top, BLACK, whiteMat))
+    #top wall
+    top = read_obj("meshes/cb/top.obj")
+    append!(objs, mesh_helper(top, BLACK, whiteMat))
 
-#tall block
-tall = read_obj("meshes/cb/tall_box.obj")
-append!(objs, mesh_helper(tall, BLACK, whiteMat))
+    #tall block
+    tall = read_obj("meshes/cb/tall_box.obj")
+    append!(objs, mesh_helper(tall, BLACK, whiteMat))
 
-#light source
-lightBox = read_obj("meshes/cb/light.obj")
-append!(objs, mesh_helper(lightBox, WHITE, mat_light))
+    #light source
+    lightBox = read_obj("meshes/cb/light.obj")
+    append!(objs, mesh_helper(lightBox, WHITE, mat_light))
 
-#small block
-small = read_obj("meshes/cb/small_box.obj")
-append!(objs, mesh_helper(small, BLACK, whiteMat))
+    #small block
+    small = read_obj("meshes/cb/small_box.obj")
+    append!(objs, mesh_helper(small, BLACK, whiteMat))
 
-println("Objects in scene ", length(objs))
+    println("Objects in scene ", length(objs))
 
-lights = [AreaLight(objs[3])] #NOT USED IN ANYTHING
-Scene(bg, objs, lights)
+
+    lights = [TriangleLight(f) for f in create_triangles(lightBox, WHITE, mat_light)]
+    println("Light objects in scene ", length(lights))
+    Scene(bg, objs, lights)
+end
+
+function cornellBox2()
+    bg = BLACK 
+    lightColor = RGB{Float32}(0.78, 0.78, 0.78)
+    mat_light = Lambertian(lightColor, lightColor, 10)
+    objs = []
+    
+    reflectMat = Specular(SILVER, SILVER, 10)
+    #Spheres
+    push!(objs, Sphere(Vec3(160, 110, 380), 110, BLACK, reflectMat))
+    push!(objs, Sphere(Vec3(420, 110, 220), 110, BLACK, reflectMat))
+
+    #floor
+    whiteMat = Lambertian(WHITE, WHITE, 10)
+    floor = read_obj("meshes/cb/floor.obj")
+    append!(objs, mesh_helper(floor, BLACK, whiteMat))
+    
+    #left wall (red)
+    redWall = RGB{Float32}(1.0, 0.25, 0.15)
+    redMat = Lambertian(redWall, redWall, 10)
+    left = read_obj("meshes/cb/left.obj")
+    append!(objs, mesh_helper(left, BLACK, redMat))
+    
+    #back wall
+    back = read_obj("meshes/cb/back.obj")
+    append!(objs, mesh_helper(back, BLACK, whiteMat))
+    
+    #right wall (blue)
+    blueWall = RGB{Float32}(0.2, 0.2, 1.0)
+    blueMat = Lambertian(blueWall, blueWall, 10)
+    right = read_obj("meshes/cb/right.obj")
+    append!(objs, mesh_helper(right, BLACK, blueMat))
+    
+    #top wall
+    top = read_obj("meshes/cb/top.obj")
+    append!(objs, mesh_helper(top, BLACK, whiteMat))
+    
+    #light source
+    lightBox = read_obj("meshes/cb/light.obj")
+    append!(objs, mesh_helper(lightBox, WHITE, mat_light))
+    
+    println("Objects in scene ", length(objs))
+    lights = [TriangleLight(f) for f in create_triangles(lightBox, WHITE, mat_light)]
+    println("Light objects in scene ", length(lights))
+    Scene(bg, objs, lights)
 end
 
 """ Red, blue, and green lambertian spheres illuminated by a sphereical light behind the camera """ 
@@ -177,9 +225,9 @@ function scene_1()
     push!(objs, Sphere(Vec3(0, 0.0, -3.0), 0.5, BLACK, mat_center)) #Red
     push!(objs, Sphere(Vec3(1.0, 0.0, -3.5), 0.5, BLACK, mat_right)) #Green
     push!(objs, Sphere(Vec3(0,-101,-1), 100.0, BLACK, mat_ground))
-    push!(objs, Sphere(Vec3(0,3.0,-8), 1.0, WHITE, mat_light)) #Light source
+    push!(objs, Sphere(Vec3(0,3.0,-5.0), 1.0, WHITE, mat_light)) #Light source
 
-    lights = [AreaLight(objs[5])] 
+    lights = [SphericalLight(objs[5])] 
     Scene(bg, objs, lights)
 end
 
@@ -321,6 +369,6 @@ function scene_7()
 end
 
 
-scenes = [scene_1, scene_2, scene_3, scene_4, scene_5, scene_6, scene_7, cornellBox]
+scenes = [scene_1, scene_2, scene_3, scene_4, scene_5, scene_6, scene_7, cornellBox, cornellBox2]
 
 end # module TestScenes
