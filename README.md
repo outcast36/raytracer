@@ -3,6 +3,13 @@
 ## How it's Made:
 This project uses the Julia language and a couple Julia libraries. 
 
+## Build and Run
+1. ```cd``` into the ```RayTracer``` directory
+2. ```julia --project``` to open the Julia CLI
+3. For development: ```using revise``` (optional)
+4. ```using RayTracer```
+5. ```RayTracer.main(scene, camera, width, sample_couunt, outfile)```
+
 ## Rendering Algorithms
 This began using the simple Whitted style algorithm where rays are traced from the viewpoint into the scene and rays are recursively traced when a reflective or refractive surface is interacted with. This is a quick way to get something up and running to produce decent looking images, but it lacks the fidelity to create certain lighting effects such as glossy reflection, soft shadows, and translucency. To address these shortcomings, I implemented distributed ray tracing methods following Cook et. al., 1984. In a nutshell, multiple rays are traced per pixel, and rather than tracing the ideal reflection or refaction direction upon those types of interactions, a probability distribution is sampled from to randomly generate reflection and refraction rays around the ideal directions. The only thing missing from distributed ray tracing is indirect lighting interactions where surfaces are illuminated by light that reflects off one or more surfaces before hitting the surface of interest. To implement indirect lighting, an algorithm known as Monte Carlo Path Tracing is used. Multiple rays are still sent from each pixel and rather than stopping when a diffuse surface is reached, the hemisphere over the intersected point is sampled according to some probability distribution, a new ray is generated using this sampling and then recursively traced. This process repeats until a ray intersects a light source, at which point the final lighting value is known for that path sample. 
 
